@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('companion', {
   transcribeAudio: (payload) => ipcRenderer.invoke('voice:transcribe', payload),
   generateImage: (payload) => ipcRenderer.invoke('image:generate', payload),
   ingestFiles: (paths) => ipcRenderer.invoke('files:ingest', { paths }),
+  selectAnalysisSources: () => ipcRenderer.invoke('files:select-analysis-sources'),
   getSettings: () => ipcRenderer.invoke('settings:get'),
   saveSettings: (payload) => ipcRenderer.invoke('settings:save', payload),
   getStartupSettings: () => ipcRenderer.invoke('startup:get'),

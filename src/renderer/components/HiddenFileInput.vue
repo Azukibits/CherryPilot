@@ -1,0 +1,9 @@
+<template>
+  <input
+    id="hiddenFileInput"
+    type="file"
+    multiple
+    hidden
+    accept=".pdf,.docx,.txt,.md,.markdown,.json,.csv,.log,.xml,.html,.css,.js,.ts,.tsx,.jsx,.vue,.py,.java,.cpp,.c,.h"
+  />
+</template>

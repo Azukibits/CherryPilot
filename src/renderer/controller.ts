@@ -1858,7 +1858,17 @@ async function askFromCompact() {
   await runAssistantRequest(question, { clearInput: true });
 }
 
-function triggerFilePicker() {
+async function triggerFilePicker() {
+  if (typeof window.companion.selectAnalysisSources === 'function') {
+    try {
+      const paths = await window.companion.selectAnalysisSources();
+      await ingestPaths(paths || []);
+    } catch (error) {
+      setCompactAnswer(error.message || textFor('filesReadFailed'));
+    }
+    return;
+  }
+
   elements.hiddenFileInput.click();
 }
 
@@ -2646,10 +2656,6 @@ window.addEventListener('dragenter', (event) => {
   event.preventDefault();
   state.dragDepth += 1;
   document.body.dataset.dragging = 'true';
-
-  if (state.windowMode === 'compact') {
-    window.companion.revealCompactWindow();
-  }
 });
 
 window.addEventListener('dragover', (event) => {

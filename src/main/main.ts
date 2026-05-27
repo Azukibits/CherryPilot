@@ -90,8 +90,12 @@ const CONTEXT_REFRESH_MIN_GAP_MS = 4500;
 const UPDATE_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
 const CAPTURE_SETTLE_MS = 90;
 const MAX_ATTACHMENT_CHARS = 18000;
+const MAX_DIRECTORY_ATTACHMENT_CHARS = 90000;
+const MAX_DIRECTORY_FILE_CHARS = 9000;
 const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
 const MAX_INGEST_FILES = 12;
+const MAX_DIRECTORY_FILES = 80;
+const MAX_DIRECTORY_DEPTH = 8;
 const MAX_LAN_BODY_BYTES = 12 * 1024 * 1024;
 const MAX_LAN_FILES = 8;
 const MAX_TOOL_ITERATIONS = 8;
@@ -145,6 +149,31 @@ const BLOCKED_OPEN_EXTENSIONS = new Set([
   '.reg',
   '.scr',
   '.vbs'
+]);
+const DIRECTORY_SKIP_NAMES = new Set([
+  '.git',
+  '.hg',
+  '.svn',
+  '.idea',
+  '.vscode',
+  '.cache',
+  '.parcel-cache',
+  '.turbo',
+  '.next',
+  '.nuxt',
+  'node_modules',
+  'dist',
+  'dist-electron',
+  'dist-renderer',
+  'build',
+  'coverage',
+  'out',
+  'target',
+  '__pycache__',
+  '.DS_Store',
+  'package-lock.json',
+  'pnpm-lock.yaml',
+  'yarn.lock'
 ]);
 
 let mainWindow;
@@ -1703,6 +1732,29 @@ async function selectWorkspaceRoot() {
   return result.filePaths[0];
 }
 
+async function selectAnalysisSources() {
+  const options = {
+    title: '选择要分析的文件或项目文件夹',
+    properties: ['openFile', 'openDirectory', 'multiSelections'],
+    filters: [
+      {
+        name: '可分析文件',
+        extensions: ['pdf', 'docx', 'txt', 'md', 'markdown', 'json', 'csv', 'log', 'xml', 'html', 'css', 'js', 'ts', 'tsx', 'jsx', 'vue', 'py', 'java', 'cpp', 'c', 'h']
+      },
+      { name: '所有文件', extensions: ['*'] }
+    ]
+  };
+  const result = mainWindow && !mainWindow.isDestroyed()
+    ? await dialog.showOpenDialog(mainWindow, options)
+    : await dialog.showOpenDialog(options);
+
+  if (result.canceled) {
+    return [];
+  }
+
+  return result.filePaths || [];
+}
+
 async function listModels(overrides = {}) {
   const settings = await readSettings();
   const rawApiKey = Object.hasOwn(overrides, 'apiKey') ? overrides.apiKey : settings.apiKey;
@@ -2163,10 +2215,13 @@ function buildAttachmentText(attachments = []) {
 
   return [
     `附件：${valid.length} 个`,
-    ...valid.map((item, index) => [
-      `--- 附件 ${index + 1}: ${item.name || '未命名'} ---`,
-      String(item.text).slice(0, MAX_ATTACHMENT_CHARS)
-    ].join('\n'))
+    ...valid.map((item, index) => {
+      const maxChars = item.type === 'directory' ? MAX_DIRECTORY_ATTACHMENT_CHARS : MAX_ATTACHMENT_CHARS;
+      return [
+        `--- 附件 ${index + 1}: ${item.name || '未命名'} ---`,
+        String(item.text).slice(0, maxChars)
+      ].join('\n');
+    })
   ].join('\n\n');
 }
 
@@ -2347,17 +2402,159 @@ async function analyzeScreenshot(payload) {
 }
 
 function isTextExtension(ext) {
-  return ['.txt', '.md', '.markdown', '.json', '.csv', '.log', '.xml', '.html', '.css', '.js', '.ts', '.py', '.java', '.cpp', '.c', '.h'].includes(ext);
+  return [
+    '.txt',
+    '.md',
+    '.markdown',
+    '.json',
+    '.jsonc',
+    '.csv',
+    '.log',
+    '.xml',
+    '.html',
+    '.css',
+    '.scss',
+    '.sass',
+    '.less',
+    '.js',
+    '.jsx',
+    '.mjs',
+    '.cjs',
+    '.ts',
+    '.tsx',
+    '.mts',
+    '.cts',
+    '.vue',
+    '.svelte',
+    '.astro',
+    '.py',
+    '.java',
+    '.cpp',
+    '.cc',
+    '.cxx',
+    '.c',
+    '.h',
+    '.hpp',
+    '.cs',
+    '.go',
+    '.rs',
+    '.php',
+    '.rb',
+    '.kt',
+    '.swift',
+    '.sh',
+    '.ps1',
+    '.sql',
+    '.yaml',
+    '.yml',
+    '.toml',
+    '.ini'
+  ].includes(ext);
 }
 
-async function extractFileText(filePath) {
-  const stat = await fs.stat(filePath);
+function normalizeRelativePath(filePath) {
+  return filePath.split(path.sep).join('/');
+}
+
+function isDirectorySkipName(name = '') {
+  return DIRECTORY_SKIP_NAMES.has(name) || DIRECTORY_SKIP_NAMES.has(name.toLowerCase());
+}
+
+function isDirectorySupportedFile(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  return isTextExtension(ext) || ext === '.pdf' || ext === '.docx';
+}
+
+async function collectDirectoryFiles(rootPath) {
+  const root = path.resolve(rootPath);
+  const files = [];
+  const tree = [];
+  let seenFiles = 0;
+  let skippedFiles = 0;
+  let skippedDirectories = 0;
+  let oversizedFiles = 0;
+  let truncated = false;
+
+  async function walk(directory, depth) {
+    if (depth > MAX_DIRECTORY_DEPTH) {
+      truncated = true;
+      return;
+    }
+
+    let entries;
+    try {
+      entries = await fs.readdir(directory, { withFileTypes: true });
+    } catch {
+      skippedDirectories += 1;
+      return;
+    }
+
+    entries.sort((left, right) => {
+      if (left.isDirectory() !== right.isDirectory()) {
+        return left.isDirectory() ? -1 : 1;
+      }
+      return left.name.localeCompare(right.name);
+    });
+
+    for (const entry of entries) {
+      if (isDirectorySkipName(entry.name) || entry.isSymbolicLink()) {
+        if (entry.isDirectory()) {
+          skippedDirectories += 1;
+        } else {
+          skippedFiles += 1;
+        }
+        continue;
+      }
+
+      const fullPath = path.join(directory, entry.name);
+      const relative = normalizeRelativePath(path.relative(root, fullPath));
+      const indent = '  '.repeat(depth);
+
+      if (entry.isDirectory()) {
+        tree.push(`${indent}${entry.name}/`);
+        await walk(fullPath, depth + 1);
+        continue;
+      }
+
+      seenFiles += 1;
+
+      if (!isDirectorySupportedFile(fullPath)) {
+        skippedFiles += 1;
+        continue;
+      }
+
+      let stat;
+      try {
+        stat = await fs.stat(fullPath);
+      } catch {
+        skippedFiles += 1;
+        continue;
+      }
+
+      if (stat.size > MAX_ATTACHMENT_BYTES) {
+        oversizedFiles += 1;
+        continue;
+      }
+
+      tree.push(`${indent}${relative}`);
+
+      if (files.length >= MAX_DIRECTORY_FILES) {
+        truncated = true;
+        continue;
+      }
+
+      files.push({ path: fullPath, relative, size: stat.size });
+    }
+  }
+
+  await walk(root, 0);
+  return { root, files, tree, seenFiles, skippedFiles, skippedDirectories, oversizedFiles, truncated };
+}
+
+async function extractSingleFileText(filePath, stat = null) {
+  stat = stat || await fs.stat(filePath);
   const ext = path.extname(filePath).toLowerCase();
   const name = path.basename(filePath);
-
-  if (stat.isDirectory()) {
-    throw new Error('暂不支持拖入文件夹');
-  }
 
   if (stat.size > MAX_ATTACHMENT_BYTES) {
     throw new Error(`文件过大，最大支持 ${Math.round(MAX_ATTACHMENT_BYTES / 1024 / 1024)} MB`);
@@ -2386,6 +2583,78 @@ async function extractFileText(filePath) {
   throw new Error(`暂不支持 ${ext || '该'} 文件类型`);
 }
 
+async function extractDirectoryText(rootPath) {
+  const summary = await collectDirectoryFiles(rootPath);
+  const rootName = path.basename(summary.root) || summary.root;
+  const sections = [
+    `项目文件夹：${rootName}`,
+    `路径：${summary.root}`,
+    `已纳入文件：${summary.files.length} 个；扫描文件：${summary.seenFiles} 个；跳过文件：${summary.skippedFiles} 个；跳过目录：${summary.skippedDirectories} 个；过大文件：${summary.oversizedFiles} 个${summary.truncated ? '；内容已按上限截断' : ''}`,
+    '',
+    '文件树：',
+    summary.tree.length > 0 ? summary.tree.join('\n') : '(没有可分析文件)',
+    '',
+    '文件内容：'
+  ];
+  let usedChars = sections.join('\n').length;
+  let contentTruncated = false;
+
+  for (const file of summary.files) {
+    if (usedChars >= MAX_DIRECTORY_ATTACHMENT_CHARS) {
+      contentTruncated = true;
+      break;
+    }
+
+    try {
+      const item = await extractSingleFileText(file.path);
+      const remaining = MAX_DIRECTORY_ATTACHMENT_CHARS - usedChars;
+      const excerpt = String(item.text || '').slice(0, Math.min(MAX_DIRECTORY_FILE_CHARS, remaining));
+
+      if (!excerpt.trim()) {
+        continue;
+      }
+
+      const block = [
+        `--- ${file.relative} ---`,
+        excerpt
+      ].join('\n');
+      sections.push(block);
+      usedChars += block.length + 2;
+
+      if (String(item.text || '').length > excerpt.length) {
+        contentTruncated = true;
+      }
+    } catch (error) {
+      const block = `--- ${file.relative} ---\n读取失败：${error.message || '未知错误'}`;
+      sections.push(block);
+      usedChars += block.length + 2;
+    }
+  }
+
+  if (contentTruncated) {
+    sections.push(`内容超过上限，已限制为 ${Math.round(MAX_DIRECTORY_ATTACHMENT_CHARS / 1000)}k 字符以内。`);
+  }
+
+  return {
+    name: `${rootName} 项目文件夹`,
+    path: summary.root,
+    type: 'directory',
+    size: summary.files.reduce((total, item) => total + item.size, 0),
+    fileCount: summary.files.length,
+    text: sections.join('\n\n')
+  };
+}
+
+async function extractFileText(filePath) {
+  const stat = await fs.stat(filePath);
+
+  if (stat.isDirectory()) {
+    return extractDirectoryText(filePath);
+  }
+
+  return extractSingleFileText(filePath, stat);
+}
+
 async function ingestFiles(filePaths = []) {
   const results = [];
   const selectedPaths = filePaths.filter(Boolean).slice(0, MAX_INGEST_FILES);
@@ -2393,10 +2662,11 @@ async function ingestFiles(filePaths = []) {
   for (const filePath of selectedPaths) {
     try {
       const item = await extractFileText(filePath);
+      const textLimit = item.type === 'directory' ? MAX_DIRECTORY_ATTACHMENT_CHARS : MAX_ATTACHMENT_CHARS;
       results.push({
         ...item,
         id: `${Date.now()}-${results.length}-${item.name}`,
-        text: item.text.slice(0, MAX_ATTACHMENT_CHARS),
+        text: item.text.slice(0, textLimit),
         preview: item.text.slice(0, 260)
       });
     } catch (error) {
@@ -2478,6 +2748,7 @@ ipcMain.handle('screen:select-region', () => startRegionCapture());
 ipcMain.handle('screenshot:analyze', (_event, payload) => analyzeScreenshot(payload));
 ipcMain.handle('context:analyze', (_event, payload) => analyzeContext(payload));
 ipcMain.handle('files:ingest', (_event, payload) => ingestFiles(payload?.paths || []));
+ipcMain.handle('files:select-analysis-sources', () => selectAnalysisSources());
 ipcMain.handle('settings:get', () => readSettings());
 ipcMain.handle('settings:save', (_event, payload) => saveSettings(payload));
 ipcMain.handle('startup:get', () => getStartupSettings());
