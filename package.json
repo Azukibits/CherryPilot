@@ -1,0 +1,79 @@
+{
+  "name": "cherrypilot",
+  "version": "0.1.0",
+  "description": "A floating desktop AI pilot that reads context, captures selected screen areas, and answers from screenshots or documents.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "clean:dist": "node scripts/clean-dist.js --before",
+    "dist": "node scripts/clean-dist.js --before && electron-builder --win nsis && node scripts/clean-dist.js --after",
+    "dist:mac": "electron-builder --mac dmg",
+    "android:version": "node scripts/sync-android-version.js",
+    "android:sync": "npm run android:version && cap sync android",
+    "android:open": "cap open android",
+    "apk": "npm run apk:debug",
+    "apk:debug": "npm run android:sync && cd android && gradlew.bat assembleDebug",
+    "apk:release": "npm run android:sync && cd android && gradlew.bat assembleRelease"
+  },
+  "keywords": [
+    "electron",
+    "desktop",
+    "ai",
+    "companion"
+  ],
+  "author": "",
+  "license": "MIT",
+  "build": {
+    "appId": "studio.cherry.pilot",
+    "productName": "CherryPilot",
+    "files": [
+      "src/**/*",
+      "scripts/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "src/assets/cherrypilot.ico",
+      "signAndEditExecutable": false,
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg"
+      ]
+    },
+    "dmg": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://example.com/cherrypilot-updates/"
+      }
+    ]
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "electron": "^42.2.0",
+    "electron-builder": "^26.8.1"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.3.4",
+    "electron-updater": "^6.8.3",
+    "mammoth": "^1.12.0",
+    "pdf-parse": "^2.4.5"
+  }
+}

@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>选择截图区域</title>
+    <link rel="stylesheet" href="./capture.css" />
+  </head>
+  <body>
+    <img id="screenImage" alt="" />
+    <div class="shade"></div>
+    <div class="selection" id="selection"></div>
+    <div class="meta" id="meta"></div>
+    <div class="hint">拖拽选择截图区域 <kbd>Esc</kbd> 取消</div>
+    <script src="./capture.js"></script>
+  </body>
+</html>

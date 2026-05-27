@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CherryPilot</string>
+    <string name="title_activity_main">CherryPilot</string>
+    <string name="package_name">studio.cherry.pilot</string>
+    <string name="custom_url_scheme">studio.cherry.pilot</string>
+</resources>
