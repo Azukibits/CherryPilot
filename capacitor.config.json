@@ -1,9 +1,0 @@
-{
-  "appId": "studio.cherry.pilot",
-  "appName": "CherryPilot",
-  "webDir": "dist-renderer",
-  "server": {
-    "androidScheme": "https",
-    "cleartext": true
-  }
-}

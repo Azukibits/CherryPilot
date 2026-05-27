@@ -14,13 +14,7 @@
     "pack": "npm run build && electron-builder --dir",
     "clean:dist": "node scripts/clean-dist.js --before",
     "dist": "node scripts/clean-dist.js --before && npm run build && electron-builder --win nsis && node scripts/clean-dist.js --after",
-    "dist:mac": "npm run build && electron-builder --mac dmg",
-    "android:version": "node scripts/sync-android-version.js",
-    "android:sync": "npm run android:version && npm run build:renderer && cap sync android",
-    "android:open": "cap open android",
-    "apk": "npm run apk:debug",
-    "apk:debug": "npm run android:sync && cd android && gradlew.bat assembleDebug",
-    "apk:release": "npm run android:sync && cd android && gradlew.bat assembleRelease"
+    "dist:mac": "npm run build && electron-builder --mac dmg"
   },
   "keywords": [
     "electron",
@@ -74,8 +68,6 @@
     "node": ">=20"
   },
   "devDependencies": {
-    "@capacitor/android": "^8.3.4",
-    "@capacitor/cli": "^8.3.4",
     "@eslint/js": "^10.0.1",
     "@types/node": "^25.9.1",
     "@vitejs/plugin-vue": "^6.0.7",
@@ -90,7 +82,6 @@
     "vue-tsc": "^3.3.2"
   },
   "dependencies": {
-    "@capacitor/core": "^8.3.4",
     "electron-updater": "^6.8.3",
     "mammoth": "^1.12.0",
     "pdf-parse": "^2.4.5",

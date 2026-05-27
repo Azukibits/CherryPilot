@@ -5,7 +5,7 @@ import vue from 'eslint-plugin-vue';
 
 export default [
   {
-    ignores: ['dist/**', 'dist-electron/**', 'dist-renderer/**', 'node_modules/**', 'android/**']
+    ignores: ['dist/**', 'dist-electron/**', 'dist-renderer/**', 'node_modules/**']
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
