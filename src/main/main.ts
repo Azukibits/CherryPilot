@@ -1,3 +1,4 @@
+// @ts-nocheck
 const { app, BrowserWindow, desktopCapturer, dialog, globalShortcut, ipcMain, screen, session, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const { execFile } = require('child_process');
@@ -11,8 +12,13 @@ const mammoth = require('mammoth');
 const pdfParse = require('pdf-parse');
 
 const APP_TITLE = 'CherryPilot';
-const APP_ICON = path.join(__dirname, 'assets', 'cherrypilot.png');
-const UPDATE_CONFIG_PATH = path.join(__dirname, 'update-config.json');
+const PROJECT_ROOT = app.isPackaged ? app.getAppPath() : path.resolve(__dirname, '..');
+const SOURCE_ROOT = path.join(PROJECT_ROOT, 'src');
+const RENDERER_DIST = path.join(PROJECT_ROOT, 'dist-renderer');
+const PRELOAD_PATH = path.join(__dirname, 'preload.cjs');
+const CAPTURE_PRELOAD_PATH = path.join(__dirname, 'capture-preload.cjs');
+const APP_ICON = path.join(SOURCE_ROOT, 'assets', 'cherrypilot.png');
+const UPDATE_CONFIG_PATH = path.join(SOURCE_ROOT, 'update-config.json');
 const DEFAULT_PROVIDERS = [
   {
     id: 'chat',
@@ -176,9 +182,11 @@ function isAppFileUrl(rawUrl = '') {
     }
 
     const filePath = path.resolve(fileURLToPath(parsed));
-    const appRoot = path.resolve(__dirname);
-    const relative = path.relative(appRoot, filePath);
-    return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+    const allowedRoots = [RENDERER_DIST, SOURCE_ROOT].map((root) => path.resolve(root));
+    return allowedRoots.some((root) => {
+      const relative = path.relative(root, filePath);
+      return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+    });
   } catch {
     return false;
   }
@@ -333,7 +341,8 @@ function restoreMainWindowTopmost() {
     return;
   }
 
-  restoreMainWindowTopmost();
+  mainWindow.setAlwaysOnTop(true, 'floating');
+  mainWindow.moveTop();
 }
 
 function pauseMainWindowTopmost() {
@@ -680,7 +689,7 @@ function createWindow() {
     alwaysOnTop: true,
     skipTaskbar: false,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: PRELOAD_PATH,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -694,7 +703,7 @@ function createWindow() {
   hardenWindow(mainWindow);
   mainWindow.setAlwaysOnTop(true, 'floating');
   mainWindow.setMenuBarVisibility(false);
-  mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  mainWindow.loadFile(path.join(RENDERER_DIST, 'index.html'));
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
@@ -816,7 +825,7 @@ async function getActiveWindowTitle() {
     return '';
   }
 
-  const scriptPath = path.join(__dirname, '..', 'scripts', 'get-active-window-title.ps1');
+  const scriptPath = path.join(PROJECT_ROOT, 'scripts', 'get-active-window-title.ps1');
 
   return new Promise((resolve) => {
     execFile(
@@ -2019,7 +2028,7 @@ async function startRegionCapture() {
     fullscreenable: false,
     backgroundColor: '#00000000',
     webPreferences: {
-      preload: path.join(__dirname, 'capture-preload.js'),
+      preload: CAPTURE_PRELOAD_PATH,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -2031,7 +2040,7 @@ async function startRegionCapture() {
 
   hardenWindow(captureWindow);
   captureWindow.setAlwaysOnTop(true, 'screen-saver');
-  captureWindow.loadFile(path.join(__dirname, 'capture.html'));
+  captureWindow.loadFile(path.join(RENDERER_DIST, 'capture.html'));
   captureWindow.once('ready-to-show', () => {
     if (!captureWindow || captureWindow.isDestroyed()) {
       return;

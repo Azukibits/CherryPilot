@@ -1,3 +1,6 @@
+// @ts-nocheck
+import '../capture.css';
+
 const image = document.getElementById('screenImage');
 const selectionEl = document.getElementById('selection');
 const metaEl = document.getElementById('meta');

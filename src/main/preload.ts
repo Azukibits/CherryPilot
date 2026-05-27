@@ -1,3 +1,4 @@
+// @ts-nocheck
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 function listen(channel, callback) {

@@ -156,27 +156,31 @@ This works with OpenAI-compatible local services such as Ollama and LM Studio. L
 
 ```powershell
 npm audit
-node --check src/main.js
-node --check src/renderer.js
-node --check src/preload.js
-node --check src/mobile-companion.js
-node --check src/capture-preload.js
-node --check src/capture.js
+npm run lint
+npm run typecheck
+npm run build
+node --check dist-electron/main.cjs
+node --check dist-electron/preload.cjs
+node --check dist-electron/capture-preload.cjs
 node --check scripts/sync-android-version.js
 ```
 
 ## Project Structure
 
 ```text
-src/main.js              Electron main process, windows, IPC, AI requests, tools, LAN sharing
-src/preload.js           Main window bridge API
-src/mobile-companion.js  Browser/Android fallback bridge for Capacitor builds
-src/renderer.js          UI, compact prompt, localization, settings, LAN receive handling
-src/index.html           Main UI
-src/styles.css           Main UI styles
-src/capture.html         Capture window
-src/capture.css          Capture styles
-src/capture.js           Capture interaction
-src/capture-preload.js   Capture bridge API
-scripts/                 Helper scripts
+src/main/main.ts                 Electron main process, windows, IPC, AI requests, tools, LAN sharing
+src/main/preload.ts              Main window bridge API
+src/main/capture-preload.ts      Capture bridge API
+src/renderer/App.vue             Vue 3 renderer lifecycle shell
+src/renderer/main.ts             Vue/Vite renderer entry
+src/renderer/controller.ts       UI, compact prompt, localization, settings, LAN receive handling
+src/renderer/mobileCompanion.ts  Browser/Android fallback bridge for Capacitor builds
+src/index.html                   Main UI shell
+src/styles.css                   Main UI styles
+src/capture.html                 Capture window shell
+src/capture/main.ts              Capture interaction
+src/capture.css                  Capture styles
+vite.renderer.config.ts          Vite renderer build
+vite.main.config.ts              Vite Electron main/preload build
+scripts/                         Helper scripts
 ```

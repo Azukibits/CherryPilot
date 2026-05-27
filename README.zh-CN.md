@@ -103,12 +103,12 @@ APK 是 Capacitor WebView 版本，可以使用核心问答、模型和部分移
 ## 语法检查
 
 ```powershell
-node --check src/main.js
-node --check src/renderer.js
-node --check src/preload.js
-node --check src/mobile-companion.js
-node --check src/capture-preload.js
-node --check src/capture.js
+npm run lint
+npm run typecheck
+npm run build
+node --check dist-electron/main.cjs
+node --check dist-electron/preload.cjs
+node --check dist-electron/capture-preload.cjs
 node --check scripts/sync-android-version.js
 node --check scripts/clean-dist.js
 ```

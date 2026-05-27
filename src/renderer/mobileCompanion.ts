@@ -1,3 +1,4 @@
+// @ts-nocheck
 (function () {
   if (window.companion) {
     return;

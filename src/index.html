@@ -5,7 +5,6 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src https: http:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CherryPilot</title>
-    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body data-mode="expanded" data-theme="dark" data-dock-side="right" data-revealed="false" data-docked="false" data-answer-zoomed="false" data-has-screenshot="false">
     <section class="compact-shell" id="compactShell" aria-label="CherryPilot">
@@ -448,7 +447,7 @@
       accept=".pdf,.docx,.txt,.md,.markdown,.json,.csv,.log,.xml,.html,.css,.js,.ts,.py,.java,.cpp,.c,.h"
     />
 
-    <script src="./mobile-companion.js"></script>
-    <script src="./renderer.js"></script>
+    <div id="app" hidden></div>
+    <script type="module" src="/renderer/main.ts"></script>
   </body>
 </html>

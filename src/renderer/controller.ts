@@ -1,3 +1,5 @@
+// @ts-nocheck
+export function bootCompanionRenderer() {
 const $ = (id) => document.getElementById(id);
 
 const elements = {
@@ -2708,3 +2710,4 @@ Promise.all([
 ]).then(([, , , , modeState]) => {
   applyWindowMode(modeState);
 });
+}
