@@ -131,6 +131,7 @@ watch(
         @pointermove="handleAgentPointerMove"
         @pointerup="handleAgentPointerUp"
         @pointercancel="handleAgentPointerCancel"
+        @lostpointercapture="handleAgentPointerCancel"
       >
         <svg class="agent-mark" viewBox="0 0 48 48" aria-hidden="true">
           <CherryMark />

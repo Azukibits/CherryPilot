@@ -44,13 +44,25 @@ function getCompactSize() {
 
 
 
-function clampCompactY(y, display, height) {
+function clamp(value, min, max) {
 
-  return Math.min(
+  return Math.min(Math.max(value, min), Math.max(min, max));
 
-    Math.max(y, display.workArea.y + COMPACT_EDGE_MARGIN),
+}
 
-    display.workArea.y + display.workArea.height - height - COMPACT_EDGE_MARGIN
+
+
+function clampCompactX(x, display, width) {
+
+  const workArea = display.workArea;
+
+  return clamp(
+
+    x,
+
+    workArea.x + COMPACT_EDGE_MARGIN,
+
+    workArea.x + workArea.width - width - COMPACT_EDGE_MARGIN
 
   );
 
@@ -58,7 +70,25 @@ function clampCompactY(y, display, height) {
 
 
 
-function getCompactBounds({ revealed = mainState.compactRevealed, docked = mainState.compactDocked, y } = {}) {
+function clampCompactY(y, display, height) {
+
+  const workArea = display.workArea;
+
+  return clamp(
+
+    y,
+
+    workArea.y + COMPACT_EDGE_MARGIN,
+
+    workArea.y + workArea.height - height - COMPACT_EDGE_MARGIN
+
+  );
+
+}
+
+
+
+function getCompactBounds({ revealed = mainState.compactRevealed, docked = mainState.compactDocked, x, y } = {}) {
 
   const size = revealed ? WINDOW_SIZES.compactHover : WINDOW_SIZES.compactIcon;
 
@@ -66,7 +96,7 @@ function getCompactBounds({ revealed = mainState.compactRevealed, docked = mainS
 
   const display = screen.getDisplayMatching({
 
-    x: current.x,
+    x: typeof x === 'number' ? x : current.x,
 
     y: typeof y === 'number' ? y : current.y,
 
@@ -78,21 +108,55 @@ function getCompactBounds({ revealed = mainState.compactRevealed, docked = mainS
 
   const workArea = display.workArea;
 
+  const nextX = clampCompactX(typeof x === 'number' ? x : current.x, display, size.width);
+
   const nextY = clampCompactY(typeof y === 'number' ? y : current.y, display, size.height);
+
+  const dockSide = mainState.compactDockSide;
 
 
 
   if (docked && !revealed) {
 
+    const dockedBounds = {
+
+      left: {
+
+        x: workArea.x - size.width + COMPACT_VISIBLE_STRIP,
+
+        y: nextY
+
+      },
+
+      right: {
+
+        x: workArea.x + workArea.width - COMPACT_VISIBLE_STRIP,
+
+        y: nextY
+
+      },
+
+      top: {
+
+        x: nextX,
+
+        y: workArea.y - size.height + COMPACT_VISIBLE_STRIP
+
+      },
+
+      bottom: {
+
+        x: nextX,
+
+        y: workArea.y + workArea.height - COMPACT_VISIBLE_STRIP
+
+      }
+
+    }[dockSide];
+
     return {
 
-      x: mainState.compactDockSide === 'left'
-
-        ? workArea.x - size.width + COMPACT_VISIBLE_STRIP
-
-        : workArea.x + workArea.width - COMPACT_VISIBLE_STRIP,
-
-      y: nextY,
+      ...dockedBounds,
 
       width: size.width,
 
@@ -106,13 +170,61 @@ function getCompactBounds({ revealed = mainState.compactRevealed, docked = mainS
 
   if (docked && revealed) {
 
+    const revealedBounds = {
+
+      left: {
+
+        x: workArea.x,
+
+        y: nextY
+
+      },
+
+      right: {
+
+        x: workArea.x + workArea.width - size.width,
+
+        y: nextY
+
+      },
+
+      top: {
+
+        x: nextX,
+
+        y: workArea.y
+
+      },
+
+      bottom: {
+
+        x: nextX,
+
+        y: workArea.y + workArea.height - size.height
+
+      }
+
+    }[dockSide];
+
     return {
 
-      x: mainState.compactDockSide === 'left'
+      ...revealedBounds,
 
-        ? workArea.x
+      width: size.width,
 
-        : workArea.x + workArea.width - size.width,
+      height: size.height
+
+    };
+
+  }
+
+
+
+  if (dockSide === 'left') {
+
+    return {
+
+      x: workArea.x + COMPACT_EDGE_MARGIN,
 
       y: nextY,
 
@@ -126,13 +238,31 @@ function getCompactBounds({ revealed = mainState.compactRevealed, docked = mainS
 
 
 
-  if (mainState.compactDockSide === 'left') {
+  if (dockSide === 'top') {
 
     return {
 
-      x: workArea.x + COMPACT_EDGE_MARGIN,
+      x: nextX,
 
-      y: nextY,
+      y: workArea.y + COMPACT_EDGE_MARGIN,
+
+      width: size.width,
+
+      height: size.height
+
+    };
+
+  }
+
+
+
+  if (dockSide === 'bottom') {
+
+    return {
+
+      x: nextX,
+
+      y: workArea.y + workArea.height - size.height - COMPACT_EDGE_MARGIN,
 
       width: size.width,
 
@@ -180,21 +310,95 @@ function getFreeCompactBounds(current) {
 
 
 
+function fitBoundsToVisibleArea(bounds, display) {
+
+  const workArea = display.workArea;
+
+  const minVisibleWidth = Math.min(COMPACT_VISIBLE_STRIP, bounds.width);
+
+  const minVisibleHeight = Math.min(COMPACT_VISIBLE_STRIP, bounds.height);
+
+  return {
+
+    x: clamp(
+
+      Math.round(bounds.x),
+
+      workArea.x - bounds.width + minVisibleWidth,
+
+      workArea.x + workArea.width - minVisibleWidth
+
+    ),
+
+    y: clamp(
+
+      Math.round(bounds.y),
+
+      workArea.y - bounds.height + minVisibleHeight,
+
+      workArea.y + workArea.height - minVisibleHeight
+
+    ),
+
+    width: bounds.width,
+
+    height: bounds.height
+
+  };
+
+}
+
+
+
+function getCompactDragBounds(pointer, bounds, offset) {
+
+  const display = screen.getDisplayNearestPoint(pointer) || screen.getDisplayMatching(bounds);
+
+  return fitBoundsToVisibleArea({
+
+    x: pointer.x - offset.x,
+
+    y: pointer.y - offset.y,
+
+    width: bounds.width,
+
+    height: bounds.height
+
+  }, display);
+
+}
+
+
+
 function isNearCompactEdge(bounds) {
 
   const display = screen.getDisplayMatching(bounds);
 
   const workArea = display.workArea;
 
-  const leftDistance = Math.abs(bounds.x - workArea.x);
+  const rightEdge = workArea.x + workArea.width;
 
-  const rightDistance = Math.abs((workArea.x + workArea.width) - (bounds.x + bounds.width));
+  const bottomEdge = workArea.y + workArea.height;
+
+  const distances = [
+
+    { side: 'left', distance: bounds.x <= workArea.x ? 0 : bounds.x - workArea.x },
+
+    { side: 'right', distance: bounds.x + bounds.width >= rightEdge ? 0 : rightEdge - (bounds.x + bounds.width) },
+
+    { side: 'top', distance: bounds.y <= workArea.y ? 0 : bounds.y - workArea.y },
+
+    { side: 'bottom', distance: bounds.y + bounds.height >= bottomEdge ? 0 : bottomEdge - (bounds.y + bounds.height) }
+
+  ];
+
+  const nearest = distances.reduce((best, item) => item.distance < best.distance ? item : best, distances[0]);
 
 
 
-  if (leftDistance <= COMPACT_SNAP_DISTANCE || rightDistance <= COMPACT_SNAP_DISTANCE) {
+  if (nearest.distance <= COMPACT_SNAP_DISTANCE) {
 
-    mainState.compactDockSide = leftDistance <= rightDistance ? 'left' : 'right';
+    mainState.compactDockSide = nearest.side;
 
     return true;
 
@@ -212,11 +416,25 @@ function updateCompactDockSide(bounds) {
 
   const display = screen.getDisplayMatching(bounds);
 
+  const workArea = display.workArea;
+
   const centerX = bounds.x + bounds.width / 2;
 
-  const displayCenterX = display.workArea.x + display.workArea.width / 2;
+  const centerY = bounds.y + bounds.height / 2;
 
-  mainState.compactDockSide = centerX < displayCenterX ? 'left' : 'right';
+  const distances = [
+
+    { side: 'left', distance: Math.abs(centerX - workArea.x) },
+
+    { side: 'right', distance: Math.abs((workArea.x + workArea.width) - centerX) },
+
+    { side: 'top', distance: Math.abs(centerY - workArea.y) },
+
+    { side: 'bottom', distance: Math.abs((workArea.y + workArea.height) - centerY) }
+
+  ];
+
+  mainState.compactDockSide = distances.reduce((best, item) => item.distance < best.distance ? item : best, distances[0]).side;
 
 }
 
@@ -618,11 +836,15 @@ export function beginCompactDrag(point = {}) {
 
     : current.y;
 
+  const pointerX = Number(point.screenX || 0);
+
+  const pointerY = Number(point.screenY || 0);
+
   mainState.compactRevealed = false;
 
   mainState.compactDocked = false;
 
-  const iconBounds = fitBoundsToDisplay({
+  const rawIconBounds = {
 
     x: iconX,
 
@@ -632,7 +854,25 @@ export function beginCompactDrag(point = {}) {
 
     height: WINDOW_SIZES.compactIcon.height
 
-  });
+  };
+
+  const dragOffset = {
+
+    x: clamp(pointerX - rawIconBounds.x, 0, rawIconBounds.width),
+
+    y: clamp(pointerY - rawIconBounds.y, 0, rawIconBounds.height)
+
+  };
+
+  const iconBounds = getCompactDragBounds(
+
+    { x: pointerX, y: pointerY },
+
+    rawIconBounds,
+
+    dragOffset
+
+  );
 
   setCompactWindowBounds(iconBounds, false);
 
@@ -640,9 +880,13 @@ export function beginCompactDrag(point = {}) {
 
   mainState.compactDragState = {
 
-    startX: Number(point.screenX || 0),
+    startX: pointerX,
 
-    startY: Number(point.screenY || 0),
+    startY: pointerY,
+
+    offsetX: dragOffset.x,
+
+    offsetY: dragOffset.y,
 
     bounds: iconBounds
 
@@ -663,18 +907,12 @@ export function dragCompactWindow(point = {}) {
   if (!mainState.mainWindow || mainState.mainWindow.isDestroyed() || mainState.windowMode !== 'compact' || mainState.compactAnswerZoomed || !mainState.compactDragState) {
     return null;
   }
-  //console.log("start：",mainState.compactDragState)
-  //console.log('pointer position',point)
-  const dx = Number(point.screenX || 0) - mainState.compactDragState.startX;
-  const dy = Number(point.screenY || 0) - mainState.compactDragState.startY;
-  const bounds = mainState.compactDragState.bounds;
-  const nextBounds = fitBoundsToDisplay({
-    x: bounds.x + dx,
-    y: bounds.y + dy,
-    width: bounds.width,
-    height: bounds.height
-  });
-  //console.log('calculate bound',nextBounds)
+  const dragState = mainState.compactDragState;
+  const nextBounds = getCompactDragBounds(
+    { x: Number(point.screenX || 0), y: Number(point.screenY || 0) },
+    dragState.bounds,
+    { x: dragState.offsetX, y: dragState.offsetY }
+  );
   mainState.mainWindow.setBounds(nextBounds, false);
   return nextBounds;
 }
@@ -707,7 +945,7 @@ function settleCompactWindow() {
 
   const nextBounds = mainState.compactDocked
 
-    ? getCompactBounds({ revealed: false, docked: true, y: bounds.y })
+    ? getCompactBounds({ revealed: false, docked: true, x: bounds.x, y: bounds.y })
 
     : fitBoundsToDisplay({
 
@@ -758,7 +996,7 @@ export function revealCompactWindow() {
 
   const nextBounds = mainState.compactDocked
 
-    ? getCompactBounds({ revealed: true, docked: true, y: bounds.y })
+    ? getCompactBounds({ revealed: true, docked: true, x: bounds.x, y: bounds.y })
 
     : {
 
@@ -803,7 +1041,7 @@ export function hideCompactTools() {
 
   const nextBounds = mainState.compactDocked
 
-    ? getCompactBounds({ revealed: false, docked: true, y: bounds.y })
+    ? getCompactBounds({ revealed: false, docked: true, x: bounds.x, y: bounds.y })
 
     : fitBoundsToDisplay({
 
@@ -955,7 +1193,6 @@ export function createWindow() {
   mainState.mainWindow.setMenuBarVisibility(false);
 
   mainState.mainWindow.loadFile(path.join(RENDERER_DIST, 'index.html'));
-  mainState.mainWindow.webContents.openDevTools();
 
 
   mainState.mainWindow.once('ready-to-show', () => {
@@ -977,15 +1214,14 @@ export function createWindow() {
 
 
   mainState.mainWindow.on('blur', () => {
-
+    // 外部截图工具或系统切窗会抢走焦点；这里同步结束主进程拖拽状态，避免后续 hover 继续移动窗口。
+    if (mainState.compactDragState) {
+      endCompactDrag();
+    }
     collapseCompactToolsForExternalWindow();
-
     setTimeout(() => {
-
       refreshActiveWindowTitle();
-
     }, 250);
-
   });
 
 

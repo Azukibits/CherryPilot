@@ -6,6 +6,7 @@ import { ingestFileList, handleLanShareReceived, setScreenshot } from '@/rendere
 import { loadHistory } from '@/renderer/composables/useHistory';
 import {
   applyWindowMode,
+  cancelCompactDrag,
   clearAutoCompact,
   closeProviderMenus,
   hideExitContextBlock,
@@ -83,6 +84,35 @@ export function useCompanionLifecycle() {
     scheduleAutoCompact();
   };
 
+  // 外部截图、Alt-Tab 或窗口失焦可能吞掉悬浮球 pointerup，这里集中清理残留拖拽状态。
+  const cancelInterruptedCompactDrag = () => {
+    if (!companionState.compactDrag) {
+      return;
+    }
+    cancelCompactDrag();
+  };
+
+  // 页面被系统遮罩或切到后台时，直接结束悬浮球拖拽，避免松开左键事件丢失。
+  const onVisibilityChange = () => {
+    if (document.hidden) {
+      cancelInterruptedCompactDrag();
+    }
+  };
+
+  // 非悬浮球自身收到的 pointerup 也作为兜底释放；正常点击会先由按钮自己的 handler 处理。
+  const onDocumentPointerUp = (event: PointerEvent) => {
+    if (event.pointerId === companionState.compactDrag?.pointerId) {
+      cancelCompactDrag(event.target);
+    }
+  };
+
+  // 兼容部分外部工具只补发 mouseup、不补发 pointerup 的情况。
+  const onWindowMouseUp = (event: MouseEvent) => {
+    if (event.button === 0) {
+      cancelInterruptedCompactDrag();
+    }
+  };
+
   // 拖拽进入窗口时显示拖拽态，支持多层 dragenter/dragleave 计数。
   const onDragEnter = (event: DragEvent) => {
     event.preventDefault();
@@ -125,9 +155,13 @@ export function useCompanionLifecycle() {
 
     document.addEventListener('click', onDocumentClick);
     document.addEventListener('pointerdown', hideExitContextBlock, { capture: true });
+    document.addEventListener('pointerup', onDocumentPointerUp);
+    document.addEventListener('visibilitychange', onVisibilityChange);
     document.addEventListener('mouseenter', onMouseEnter);
     document.addEventListener('mousemove', onMouseMove, { passive: true });
     document.addEventListener('mouseleave', onMouseLeave);
+    window.addEventListener('blur', cancelInterruptedCompactDrag);
+    window.addEventListener('mouseup', onWindowMouseUp);
     window.addEventListener('dragenter', onDragEnter);
     window.addEventListener('dragover', onDragOver);
     window.addEventListener('dragleave', onDragLeave);
@@ -175,9 +209,13 @@ export function useCompanionLifecycle() {
     removeDocumentLocaleWatch();
     document.removeEventListener('click', onDocumentClick);
     document.removeEventListener('pointerdown', hideExitContextBlock, { capture: true });
+    document.removeEventListener('pointerup', onDocumentPointerUp);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
     document.removeEventListener('mouseenter', onMouseEnter);
     document.removeEventListener('mousemove', onMouseMove);
     document.removeEventListener('mouseleave', onMouseLeave);
+    window.removeEventListener('blur', cancelInterruptedCompactDrag);
+    window.removeEventListener('mouseup', onWindowMouseUp);
     window.removeEventListener('dragenter', onDragEnter);
     window.removeEventListener('dragover', onDragOver);
     window.removeEventListener('dragleave', onDragLeave);
