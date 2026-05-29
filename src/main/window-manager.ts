@@ -977,15 +977,14 @@ export function createWindow() {
 
 
   mainState.mainWindow.on('blur', () => {
-
+    // 外部截图工具或系统切窗会抢走焦点；这里同步结束主进程拖拽状态，避免后续 hover 继续移动窗口。
+    if (mainState.compactDragState) {
+      endCompactDrag();
+    }
     collapseCompactToolsForExternalWindow();
-
     setTimeout(() => {
-
       refreshActiveWindowTitle();
-
     }, 250);
-
   });
 
 
