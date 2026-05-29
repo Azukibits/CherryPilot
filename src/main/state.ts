@@ -19,9 +19,11 @@ export interface RegionCaptureState {
   bounds: Rectangle;
 }
 
+export type CompactDockSide = 'left' | 'right' | 'top' | 'bottom';
+
 export interface CompactAnswerRestoreState {
   bounds: Rectangle;
-  dockSide: 'left' | 'right';
+  dockSide: CompactDockSide;
   revealed: boolean;
   docked: boolean;
 }
@@ -29,6 +31,8 @@ export interface CompactAnswerRestoreState {
 export interface CompactDragState {
   startX: number;
   startY: number;
+  offsetX: number;
+  offsetY: number;
   bounds: Rectangle;
 }
 
@@ -58,7 +62,7 @@ export interface MainState {
   // 悬浮窗拖拽过程中的起始坐标和窗口边界。
   compactDragState: CompactDragState | null;
   // 悬浮窗当前贴靠的屏幕边。
-  compactDockSide: 'left' | 'right';
+  compactDockSide: CompactDockSide;
   // 悬浮窗工具区是否展开。
   compactRevealed: boolean;
   // 悬浮窗是否吸附到屏幕边缘。
