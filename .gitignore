@@ -1,6 +1,8 @@
 node_modules/
 .idea/
 dist/
+dist-electron/
+dist-renderer/
 out/
 android/.gradle/
 android/build/

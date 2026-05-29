@@ -1,40 +1,97 @@
-# CherryPilot 中文说明
+# CherryPilot
 
-CherryPilot 是一个悬浮式桌面 AI 助手。它可以读取截图、文档、语音、局域网共享内容和授权工作目录中的文件，然后结合上下文回答问题；也可以在你明确授权后创建项目、写文件、运行构建/调试命令。
+[English](README.md) | [简体中文](README.zh-CN.md)
 
-## 应该用哪个 exe
+> 一个悬浮式桌面 AI Pilot，用于截图、文件、语音、本地/云端模型，以及受控的工作区自动化。
 
-给自己或别人正常安装，请用：
+CherryPilot 是一个 Electron 桌面助手，会以悬浮小图标常驻在工作区上方。它可以基于区域截图、当前窗口标题、拖入文件、语音命令和 OpenAI-compatible 接口回答问题。用户明确授权后，它也可以在指定工作区内读写文件，并运行受限的开发命令。
 
-```text
-dist/CherryPilot-Setup-0.1.0.exe
-```
+![CherryPilot 图标](src/assets/cherrypilot.png)
 
-不要直接运行 `win-unpacked` 里的 exe，它只是打包过程产生的中间目录。`latest.yml` 和 `.blockmap` 也不是程序，它们是桌面自动更新需要的元数据；如果你要发布自动更新，需要和安装包一起上传到更新目录。
+![Electron](https://img.shields.io/badge/Electron-42-47848F?logo=electron)
+![Vue](https://img.shields.io/badge/Vue-3-42b883?logo=vuedotjs)
+![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite)
+![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-当前默认打包只生成安装版，不再生成 Portable 免安装版。
+## 功能
 
-## 安装依赖
+- 悬浮式紧凑助手，支持置顶、拖拽、贴边停靠和展开设置面板。
+- 区域截图，发送前可预览或删除。
+- 文件上下文读取，支持 PDF、DOCX、Markdown、日志、JSON、HTML/CSS/JS/TS、Python、Java、C/C++ 和纯文本。
+- 语音唤醒、语音转写、语音提问和语音生图命令。
+- 多个 OpenAI-compatible 接口槽位，也支持 Ollama / LM Studio 这类本地服务。
+- 模型列表刷新，以及紧凑面板内快速切换模型。
+- 历史记录面板，先显示问题标题，点击后查看完整回答。
+- 可选的工作区授权，用于 AI 读写文件和创建项目。
+- 独立的命令权限开关，用于受控运行构建、调试、测试和发布命令。
+- 局域网分享服务，允许可信局域网设备发送资料。
+- 低 CPU 模式和开机自启动设置。
+- 基于 `electron-updater` 的桌面自动更新。
 
-需要 Node.js 20 或更高版本。
+## 环境要求
+
+- Node.js 20 或更高版本。
+- Windows 用于默认 NSIS 安装包目标。
+- macOS DMG 目标需要在 macOS 或 macOS CI 上构建。
+
+## 快速开始
 
 ```powershell
 npm install
-```
-
-## 开发运行
-
-```powershell
 npm start
 ```
 
-## Windows 打包
+`npm start` 会先构建 Vite 渲染进程和 Electron 主进程，然后启动桌面应用。
+
+## 常见问题
+
+### API Key 或模型报错
+
+打开主面板，填写接口 API Key、Base URL 和模型名，然后保存配置。本地模型常用地址：
+
+```text
+http://127.0.0.1:11434/v1
+```
+
+### 截图无法启动
+
+确认没有其他截图窗口正在打开，然后重新点击截图按钮或使用全局快捷键。Windows 打包版如果被安全软件限制，可能需要放行屏幕捕获权限。
+
+### 工作区工具不可用
+
+先选择并授权一个工作区目录。命令执行还需要单独打开命令权限开关。
+
+### 构建产物看起来是旧的
+
+```powershell
+npm run clean:dist
+npm run build
+```
+
+## 从源码构建
+
+类型检查、代码规范检查和构建：
+
+```powershell
+npm run lint
+npm run typecheck
+npm run build
+```
+
+Windows 解包版本：
+
+```powershell
+npm run pack
+```
+
+Windows 安装包：
 
 ```powershell
 npm run dist
 ```
 
-输出文件：
+预期输出：
 
 ```text
 dist/CherryPilot-Setup-0.1.0.exe
@@ -42,17 +99,19 @@ dist/CherryPilot-Setup-0.1.0.exe.blockmap
 dist/latest.yml
 ```
 
-`npm run dist` 会先清理旧的 `dist`，避免旧的 exe 混在一起；构建后也会删除 `win-unpacked` 这类中间产物。
+macOS DMG：
+
+```powershell
+npm run dist:mac
+```
+
+macOS 目标请在 macOS 或 macOS CI 上运行。
 
 ## 桌面自动更新
 
-桌面自动更新只适用于安装版，也就是 `CherryPilot-Setup-<version>.exe`。
+CherryPilot 会在打包后的桌面版中检查更新。更新地址可以在 `src/update-config.json` 中配置，也可以用运行时环境变量 `CHERRYPILOT_UPDATE_URL` 覆盖。
 
-发布新版本时：
-
-1. 修改 `package.json` 里的 `version`。
-2. 运行 `npm run dist`。
-3. 把下面三个文件上传到同一个更新目录：
+使用 generic 更新源时，把下面三个文件放到同一个更新目录：
 
 ```text
 latest.yml
@@ -60,55 +119,38 @@ CherryPilot-Setup-<version>.exe
 CherryPilot-Setup-<version>.exe.blockmap
 ```
 
-更新地址在 `src/update-config.json` 里配置，也可以用运行环境变量 `CHERRYPILOT_UPDATE_URL` 覆盖。
+每次发布前记得更新 `package.json` 里的 `version`。
 
-## Android APK
+## 工作区安全
 
-需要 Android Studio / Android SDK 和 JDK。当前机器如果没有 `JAVA_HOME` 或 PATH 里没有 `java`，APK 构建会失败。
+建议只授权专门的工作区目录。不要授权桌面、下载目录、用户主目录，或包含密钥的仓库。
 
-同步 Android 资源：
+应用会阻止直接打开 `.exe`、`.bat`、`.cmd`、`.ps1`、`.reg` 等可执行/脚本类型。命令工具默认关闭，并且只允许白名单内的开发命令。
 
-```powershell
-npm run android:sync
-```
-
-构建 debug APK：
-
-```powershell
-npm run apk:debug
-```
-
-输出位置：
+## 项目结构
 
 ```text
-android/app/build/outputs/apk/debug/app-debug.apk
+src/main/main.ts              Electron 主进程、窗口、IPC、AI 请求、工具、局域网分享
+src/main/preload.ts           主窗口桥接 API
+src/main/capture-preload.ts   截图窗口桥接 API
+src/renderer/App.vue          Vue 3 渲染进程生命周期壳
+src/renderer/main.ts          Vue/Vite 渲染入口
+src/renderer/controller.ts    UI 控制器、紧凑问答、语言、设置、历史记录
+src/capture/main.ts           截图交互
+src/index.html                主窗口 HTML 壳
+src/capture.html              截图窗口 HTML 壳
+src/styles.css                主界面样式
+src/capture.css               截图窗口样式
+src/assets/                   应用图标
+vite.renderer.config.ts       Vite 渲染进程构建配置
+vite.main.config.ts           Vite Electron 主进程/preload 构建配置
+scripts/                      工具脚本
 ```
 
-APK 是 Capacitor WebView 版本，可以使用核心问答、模型和部分移动端桥接能力；桌面悬浮窗、置顶窗口、原生区域截图、工作目录命令工具和局域网服务端等桌面能力不属于 APK 功能。
+## 状态
 
-## 常用功能
+CherryPilot 仍处于早期桌面应用阶段。当前优先级是保持 Electron 桌面体验稳定，同时逐步把迁移后的渲染控制器拆成更小的 Vue/TypeScript 模块。
 
-- 悬浮图标：单击展开小问答框，双击打开主界面。
-- 区域截图：截图后会显示预览，可以删除；删除后不会再作为上下文发送。
-- 文档上下文：支持拖入或选择 PDF、DOCX、Markdown、代码文件等。
-- 多接口：支持多个 OpenAI-compatible 接口，也支持 Ollama / LM Studio 这类本地模型地址。
-- 工作目录授权：AI 只能在你授权的目录里读写文件。
-- 命令权限：默认关闭，只有单独开启后才允许运行构建、测试、调试等命令。
-- 局域网共享：同一局域网设备可以通过浏览器页面发送文字或文件给 CherryPilot。
+## 许可证
 
-## 安全建议
-
-建议只授权专门的工作文件夹，不要授权桌面、下载目录、用户主目录或包含密钥的仓库。命令权限只在确实需要构建、调试或发布时打开。
-
-## 语法检查
-
-```powershell
-node --check src/main.js
-node --check src/renderer.js
-node --check src/preload.js
-node --check src/mobile-companion.js
-node --check src/capture-preload.js
-node --check src/capture.js
-node --check scripts/sync-android-version.js
-node --check scripts/clean-dist.js
-```
+MIT

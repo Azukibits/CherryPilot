@@ -3,6 +3,11 @@ const path = require('path');
 
 const repoRoot = path.resolve(__dirname, '..');
 const distDir = path.join(repoRoot, 'dist');
+const buildDirs = [
+  distDir,
+  path.join(repoRoot, 'dist-electron'),
+  path.join(repoRoot, 'dist-renderer')
+];
 
 function remove(targetPath) {
   const resolved = path.resolve(targetPath);
@@ -20,7 +25,9 @@ function removeIfExists(name) {
 }
 
 if (process.argv.includes('--before')) {
-  remove(distDir);
+  for (const buildDir of buildDirs) {
+    remove(buildDir);
+  }
   process.exit(0);
 }
 

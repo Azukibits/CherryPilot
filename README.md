@@ -1,52 +1,83 @@
 # CherryPilot
 
-[中文说明](README.zh-CN.md)
+[English](README.md) | [简体中文](README.zh-CN.md)
 
-CherryPilot is a floating Electron AI companion. It can answer from screenshots, files, voice input, local/cloud models, authorized workspace files, and LAN-shared materials. It can also create code projects, run guarded build/debug commands, and open generated files or folders with the system default app.
+> A floating desktop AI pilot for screenshots, files, voice input, local/cloud models, and guarded workspace automation.
+
+CherryPilot is an Electron desktop companion that stays above your workspace as a compact floating icon. It can answer from selected screen regions, active-window context, dropped files, voice commands, and configured OpenAI-compatible providers. When explicitly authorized, it can also read/write inside a chosen workspace and run a narrow set of developer commands.
+
+![CherryPilot icon](src/assets/cherrypilot.png)
+
+![Electron](https://img.shields.io/badge/Electron-42-47848F?logo=electron)
+![Vue](https://img.shields.io/badge/Vue-3-42b883?logo=vuedotjs)
+![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite)
+![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Features
 
-- Floating desktop assistant with compact prompt, main settings panel, pinning, drag, and edge docking.
-- Chinese, English, and Japanese UI language switching.
-- Multiple OpenAI-compatible providers plus local Ollama / LM Studio style endpoints.
-- Screenshot, active-window title, PDF, DOCX, Markdown, source files, voice input, and image generation.
-- History list that shows question titles first and opens full answers on click.
-- Workspace folder authorization for AI file read/write, project creation, and file opening.
-- Separate command permission for build, test, debug, dependency install, and publish commands.
-- LAN sharing: devices on the same local network can send text/files through a browser page; readable materials become Q&A context.
-- Low CPU mode: enabled by default, reducing idle background polling.
-- Startup launch option using the current OS user's login item settings.
+- Floating compact assistant with pinning, drag, edge docking, and expanded settings panel.
+- Region screenshots with preview/delete before the image is sent as context.
+- File context ingestion for PDF, DOCX, Markdown, logs, JSON, HTML/CSS/JS/TS, Python, Java, C/C++ and plain text.
+- Voice wake phrase flow, transcription, question answering, and image generation commands.
+- Multiple OpenAI-compatible provider slots plus local Ollama / LM Studio style endpoints.
+- Model list refresh and quick model switching from the compact panel.
+- History panel with short question titles and full-answer detail view.
+- Optional workspace authorization for AI file read/write and project creation.
+- Separate command permission for guarded build/debug/test/publish commands.
+- LAN sharing server for trusted local-network devices.
+- Low CPU mode and startup launch settings.
+- Desktop auto-update support through `electron-updater`.
 
-## Security Model
+## Requirements
 
-- Renderer windows use `contextIsolation`, disable `nodeIntegration`, enable `sandbox`, and disable webview.
-- Windows block external navigation and new-window popups.
-- Main and capture pages use Content Security Policy.
-- Browser permissions are denied by default except media permission required for voice input.
-- API keys are stored in Electron `userData/settings.json`; they are not bundled into the portable exe.
-- File ingestion is limited to 8 MB per file and 12 files per batch.
-- AI file tools are restricted to the authorized workspace folder and its children.
-- Opening files blocks direct launch of executable/script types such as `.exe`, `.bat`, `.cmd`, `.ps1`, and `.reg`.
-- Command tools are off by default and only allow whitelisted developer commands such as `npm`, `node`, `python`, `git`, `cmake`, `cargo`, `go`, `dotnet`, and `java`.
-- LAN sharing is off by default and uses a random token in the share URL. Only share the URL with trusted LAN devices.
+- Node.js 20 or newer.
+- Windows for the default NSIS installer target.
+- macOS only when building the macOS DMG target.
 
-Use a dedicated workspace folder. Avoid authorizing Desktop, Downloads, your home directory, or repositories that contain secrets.
-
-## Install
-
-Requires Node.js 20 or newer.
+## Quick Install
 
 ```powershell
 npm install
-```
-
-## Development
-
-```powershell
 npm start
 ```
 
-## Build
+`npm start` builds the Vite renderer and Electron main process, then launches the desktop app.
+
+## Troubleshooting
+
+### API key or model errors
+
+Open the main panel, fill in the provider API key, base URL, and model, then save settings. Local endpoints such as Ollama and LM Studio usually use:
+
+```text
+http://127.0.0.1:11434/v1
+```
+
+### Screenshot does not start
+
+Make sure no capture window is already open, then retry the screenshot button or global shortcut. On Windows, packaged builds may need screen-capture permission from security software.
+
+### Workspace tools are unavailable
+
+Choose a workspace folder first. Command execution also requires the separate command-access toggle.
+
+### Build artifacts look stale
+
+```powershell
+npm run clean:dist
+npm run build
+```
+
+## Build From Source
+
+Type-check, lint, and build:
+
+```powershell
+npm run lint
+npm run typecheck
+npm run build
+```
 
 Windows unpacked app:
 
@@ -60,7 +91,7 @@ Windows installer:
 npm run dist
 ```
 
-Output:
+Expected installer output:
 
 ```text
 dist/CherryPilot-Setup-0.1.0.exe
@@ -68,21 +99,19 @@ dist/CherryPilot-Setup-0.1.0.exe.blockmap
 dist/latest.yml
 ```
 
-Run `CherryPilot-Setup-<version>.exe` for normal installation and desktop auto-update support. `latest.yml` and the `.blockmap` file are update metadata; do not double-click them, but keep/upload them with the installer if you use auto updates.
-
-macOS DMG target:
+macOS DMG:
 
 ```powershell
 npm run dist:mac
 ```
 
-The macOS DMG target should be run on macOS or a macOS CI runner. A Windows machine can keep the config and script, but normally cannot produce a distributable `.dmg` locally.
+Run the macOS target on macOS or a macOS CI runner.
 
 ## Desktop Auto Update
 
-CherryPilot checks for updates on startup and then periodically when running as a packaged Electron app. Configure the update feed in `src/update-config.json` before building, or set `CHERRYPILOT_UPDATE_URL` in the runtime environment.
+CherryPilot checks for updates in packaged desktop builds. Configure the update feed in `src/update-config.json`, or override it with `CHERRYPILOT_UPDATE_URL`.
 
-For the generic updater URL, upload the files generated by `npm run dist` to the same directory, including:
+For the generic updater, upload these files to the same update directory:
 
 ```text
 latest.yml
@@ -90,93 +119,38 @@ CherryPilot-Setup-<version>.exe
 CherryPilot-Setup-<version>.exe.blockmap
 ```
 
-The app downloads updates automatically and installs them when CherryPilot exits. Remember to bump `package.json` `version` for every release.
+Bump `package.json` `version` before every release.
 
-## Android APK
+## Workspace Safety
 
-Requires Android Studio / Android SDK and a compatible JDK.
+Use a dedicated workspace folder. Avoid authorizing Desktop, Downloads, your home directory, or repositories containing secrets.
 
-Debug APK:
-
-```powershell
-npm run apk:debug
-```
-
-Output:
-
-```text
-android/app/build/outputs/apk/debug/app-debug.apk
-```
-
-Release APK:
-
-```powershell
-npm run apk:release
-```
-
-The Android build is a Capacitor WebView package of the renderer UI. Core chat/model/image/voice API calls work through the mobile fallback bridge. Desktop-only features such as floating always-on-top windows, active-window title, native region screenshot, workspace command tools, LAN sharing server, and native PDF/DOCX extraction are not available inside the APK.
-
-`npm run android:sync` automatically syncs Android `versionName` and `versionCode` from `package.json`. Android app auto-updates should be handled by your distribution channel, such as Google Play, MDM, or a managed APK updater; the Electron updater only applies to the desktop installer.
-
-## Workspace Folder
-
-1. Double-click the floating icon to open the main menu.
-2. In Workspace Folder, choose a folder.
-3. Once authorized, AI can read/write only inside that folder.
-4. Enable command permission only if you want AI to run build/debug/publish commands.
-5. AI can open generated files or project folders with the system default app.
-
-Example:
-
-```text
-Create a Python CLI project in the authorized folder, write README.md, and open main.py when done.
-```
-
-## LAN Sharing
-
-1. Open LAN Sharing in the main menu.
-2. Copy the displayed `http://LAN-IP:port/?token=...` address.
-3. Open that address from another device on the same local network.
-4. Send notes or files from the browser page.
-5. CherryPilot receives readable content as current Q&A context.
-
-If every device runs CherryPilot and enables LAN Sharing, devices can send materials to each other by using each other's share URL.
-
-## Local Models
-
-Default local endpoint:
-
-```text
-http://127.0.0.1:11434/v1
-```
-
-This works with OpenAI-compatible local services such as Ollama and LM Studio. Localhost / 127.0.0.1 usually does not require an API key.
-
-## Checks
-
-```powershell
-npm audit
-node --check src/main.js
-node --check src/renderer.js
-node --check src/preload.js
-node --check src/mobile-companion.js
-node --check src/capture-preload.js
-node --check src/capture.js
-node --check scripts/sync-android-version.js
-```
+The app blocks direct opening of executable/script file types such as `.exe`, `.bat`, `.cmd`, `.ps1`, and `.reg`. Command tools are off by default and only allow whitelisted developer commands.
 
 ## Project Structure
 
 ```text
-src/main.js              Electron main process, windows, IPC, AI requests, tools, LAN sharing
-src/preload.js           Main window bridge API
-src/mobile-companion.js  Browser/Android fallback bridge for Capacitor builds
-src/renderer.js          UI, compact prompt, localization, settings, LAN receive handling
-src/index.html           Main UI
-src/styles.css           Main UI styles
-src/capture.html         Capture window
-src/capture.css          Capture styles
-src/capture.js           Capture interaction
-src/capture-preload.js   Capture bridge API
-scripts/                 Helper scripts
+src/main/main.ts              Electron main process, windows, IPC, AI requests, tools, LAN sharing
+src/main/preload.ts           Main-window bridge API
+src/main/capture-preload.ts   Capture-window bridge API
+src/renderer/App.vue          Vue 3 renderer lifecycle shell
+src/renderer/main.ts          Vue/Vite renderer entry
+src/renderer/controller.ts    UI controller, compact prompt, localization, settings, history
+src/capture/main.ts           Capture interaction
+src/index.html                Main window HTML shell
+src/capture.html              Capture window HTML shell
+src/styles.css                Main UI styles
+src/capture.css               Capture styles
+src/assets/                   App icons
+vite.renderer.config.ts       Vite renderer build config
+vite.main.config.ts           Vite Electron main/preload build config
+scripts/                      Utility scripts
 ```
+
+## Status
+
+CherryPilot is an early desktop app. The current priority is keeping the desktop Electron experience stable while gradually splitting the migrated renderer controller into smaller Vue/TypeScript modules.
+
+## License
+
+MIT

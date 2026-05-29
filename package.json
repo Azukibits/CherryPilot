@@ -2,19 +2,19 @@
   "name": "cherrypilot",
   "version": "0.1.0",
   "description": "A floating desktop AI pilot that reads context, captures selected screen areas, and answers from screenshots or documents.",
-  "main": "src/main.js",
+  "main": "dist-electron/main.cjs",
   "scripts": {
-    "start": "electron .",
-    "pack": "electron-builder --dir",
+    "dev": "npm run build && electron .",
+    "start": "npm run dev",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "build:renderer": "vite build --config vite.renderer.config.ts",
+    "build:main": "vite build --config vite.main.config.ts",
+    "build": "npm run typecheck && npm run build:renderer && npm run build:main",
+    "pack": "npm run build && electron-builder --dir",
     "clean:dist": "node scripts/clean-dist.js --before",
-    "dist": "node scripts/clean-dist.js --before && electron-builder --win nsis && node scripts/clean-dist.js --after",
-    "dist:mac": "electron-builder --mac dmg",
-    "android:version": "node scripts/sync-android-version.js",
-    "android:sync": "npm run android:version && cap sync android",
-    "android:open": "cap open android",
-    "apk": "npm run apk:debug",
-    "apk:debug": "npm run android:sync && cd android && gradlew.bat assembleDebug",
-    "apk:release": "npm run android:sync && cd android && gradlew.bat assembleRelease"
+    "dist": "node scripts/clean-dist.js --before && npm run build && electron-builder --win nsis && node scripts/clean-dist.js --after",
+    "dist:mac": "npm run build && electron-builder --mac dmg"
   },
   "keywords": [
     "electron",
@@ -28,7 +28,10 @@
     "appId": "studio.cherry.pilot",
     "productName": "CherryPilot",
     "files": [
-      "src/**/*",
+      "dist-electron/**/*",
+      "dist-renderer/**/*",
+      "src/assets/**/*",
+      "src/update-config.json",
       "scripts/**/*",
       "package.json"
     ],
@@ -65,15 +68,23 @@
     "node": ">=20"
   },
   "devDependencies": {
-    "@capacitor/android": "^8.3.4",
-    "@capacitor/cli": "^8.3.4",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.9.1",
+    "@vitejs/plugin-vue": "^6.0.7",
     "electron": "^42.2.0",
-    "electron-builder": "^26.8.1"
+    "electron-builder": "^26.8.1",
+    "eslint": "^10.4.0",
+    "eslint-plugin-vue": "^10.9.1",
+    "globals": "^17.6.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.60.0",
+    "vite": "^8.0.14",
+    "vue-tsc": "^3.3.2"
   },
   "dependencies": {
-    "@capacitor/core": "^8.3.4",
     "electron-updater": "^6.8.3",
     "mammoth": "^1.12.0",
-    "pdf-parse": "^2.4.5"
+    "pdf-parse": "^2.4.5",
+    "vue": "^3.5.35"
   }
 }
