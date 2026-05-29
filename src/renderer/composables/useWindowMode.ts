@@ -226,6 +226,40 @@ export function flushCompactDrag() {
   }
 }
 
+// 释放悬浮球指针捕获；外部截图等系统级打断可能让 pointerup 丢失，所以这里统一兜底。
+function releaseCompactPointerCapture(pointerId: number | null | undefined, fallbackTarget?: EventTarget | null) {
+  if (typeof pointerId !== 'number') {
+    return;
+  }
+
+  const fallbackElement = fallbackTarget instanceof HTMLElement ? fallbackTarget : null;
+  const agentElement = document.getElementById('agentIcon');
+
+  for (const target of [fallbackElement, agentElement]) {
+    try {
+      if (target?.hasPointerCapture?.(pointerId)) {
+        target.releasePointerCapture(pointerId);
+      }
+    } catch {
+      // 指针已经被系统取消或转移时，释放捕获可能抛错；状态清理仍然继续。
+    }
+  }
+}
+
+// 取消当前悬浮球拖拽，并在已经开始拖拽窗口时通知主进程完成吸边结算。
+export function cancelCompactDrag(fallbackTarget?: EventTarget | null) {
+  const pointerId = companionState.compactDrag?.pointerId;
+  const wasDragging = Boolean(companionState.compactDrag?.started);
+
+  companionState.compactDrag = null;
+  releaseCompactPointerCapture(pointerId, fallbackTarget);
+  flushCompactDrag();
+
+  if (wasDragging) {
+    window.companion.endCompactDrag();
+  }
+}
+
 // 记录悬浮球按下位置，超过阈值后才真正进入拖拽。
 export function handleAgentPointerDown(event: PointerEvent) {
   if (companionState.windowMode !== 'compact' || event.button !== 0) {
@@ -247,6 +281,12 @@ export function handleAgentPointerDown(event: PointerEvent) {
 // 处理悬浮球拖拽移动，首次超过阈值时通知主进程开始拖拽。
 export async function handleAgentPointerMove(event: PointerEvent) {
   if (!companionState.compactDrag) {
+    return;
+  }
+
+  // 如果系统截图或外部窗口吞掉 pointerup，下一次移动时 buttons 会归零，必须立即清理旧拖拽。
+  if ((event.buttons & 1) !== 1) {
+    cancelCompactDrag(event.currentTarget);
     return;
   }
 
@@ -284,10 +324,7 @@ export async function handleAgentPointerUp(event: PointerEvent) {
   const wasDragging = companionState.compactDrag.started;
   companionState.compactDrag = null;
 
-  const target = event.currentTarget as HTMLElement | null;
-  if (target?.hasPointerCapture?.(pointerId)) {
-    target.releasePointerCapture(pointerId);
-  }
+  releaseCompactPointerCapture(pointerId, event.currentTarget);
 
   if (!wasDragging || distance <= 6) {
     handleAgentTap();
@@ -300,12 +337,6 @@ export async function handleAgentPointerUp(event: PointerEvent) {
 }
 
 // 指针取消时清理拖拽状态，并让主进程完成吸边结算。
-export function handleAgentPointerCancel() {
-  const wasDragging = companionState.compactDrag?.started;
-  companionState.compactDrag = null;
-  flushCompactDrag();
-
-  if (wasDragging) {
-    window.companion.endCompactDrag();
-  }
+export function handleAgentPointerCancel(event?: PointerEvent) {
+  cancelCompactDrag(event?.currentTarget);
 }
