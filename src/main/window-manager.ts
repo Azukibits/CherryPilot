@@ -606,13 +606,13 @@ export function beginCompactDrag(point = {}) {
 
   const current = mainState.mainWindow.getBounds();
 
-  const iconX = mainState.compactRevealed && !mainState.compactDocked
+  const iconX = mainState.compactRevealed
 
     ? current.x + COMPACT_REVEAL_LEFT_OFFSET
 
     : current.x;
 
-  const iconY = mainState.compactRevealed && !mainState.compactDocked
+  const iconY = mainState.compactRevealed
 
     ? current.y + COMPACT_REVEAL_TOP_OFFSET
 
