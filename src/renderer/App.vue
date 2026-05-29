@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import CompactShell from './components/CompactShell.vue';
-import HiddenFileInput from './components/HiddenFileInput.vue';
-import MainWindow from './components/MainWindow.vue';
-import { bootCompanionRenderer } from './controller';
+import CompactShell from '@/renderer/components/CompactShell.vue';
+import MainWindow from '@/renderer/views/MainWindow.vue';
+import { useBodyDatasetSync } from '@/renderer/composables/companionState';
+import { useCompanionLifecycle } from '@/renderer/composables/useCompanionLifecycle';
 
-onMounted(() => {
-  bootCompanionRenderer();
-});
+useBodyDatasetSync();
+useCompanionLifecycle();
 </script>
 
 <template>
   <CompactShell />
   <MainWindow />
-  <HiddenFileInput />
 </template>

@@ -6,6 +6,11 @@ export default defineConfig({
   root: 'src',
   base: './',
   plugins: [vue()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src')
+    }
+  },
   build: {
     outDir: '../dist-renderer',
     emptyOutDir: true,
