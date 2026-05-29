@@ -12,6 +12,11 @@ const external = [
 ];
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src')
+    }
+  },
   build: {
     outDir: 'dist-electron',
     emptyOutDir: true,

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import '../capture.css';
+import '@/capture.css';
 
 const image = document.getElementById('screenImage');
 const selectionEl = document.getElementById('selection');
