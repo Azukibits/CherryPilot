@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import SettingsPanel from '@/renderer/components/SettingsPanel.vue';
 import TitleBar from '@/renderer/components/TitleBar.vue';
-import { companionState } from '@/renderer/composables/companionState';
+import { companionState } from '@/renderer/stores/companion';
 
 const state = companionState;
 </script>

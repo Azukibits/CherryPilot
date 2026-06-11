@@ -1,8 +1,8 @@
 import { computed } from 'vue';
-import { companionState, setBusy, setCompactAnswer, setStatusText, type AttachmentItem } from '@/renderer/composables/companionState';
+import { companionState, setBusy, setCompactAnswer, setStatusText, type AttachmentItem } from '@/renderer/stores/companion';
 import { errorMessage } from '@/renderer/composables/errorMessage';
 import { formatText, textFor } from '@/renderer/composables/companionText';
-import { applyWindowMode } from '@/renderer/composables/useWindowMode';
+import { applyWindowMode, revealCompactTools } from '@/renderer/composables/useWindowMode';
 
 // 当前语言的普通文案读取器。
 const t = (key: Parameters<typeof textFor>[1]) => textFor(companionState.guideLanguage, key);
@@ -129,8 +129,7 @@ export async function appendIngestedItems(items: AttachmentItem[] = []) {
 
   const modeState = await window.companion.setWindowMode('compact');
   applyWindowMode(modeState);
-  await window.companion.revealCompactWindow();
-  companionState.revealed = true;
+  await revealCompactTools();
 }
 
 // 按本地路径读取文件/目录并追加到附件上下文。

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import CherryMark from '@/renderer/components/CherryMark.vue';
-import { companionState } from '@/renderer/composables/companionState';
+import { companionState } from '@/renderer/stores/companion';
 import { textFor } from '@/renderer/composables/companionText';
 import { collapseToCompact } from '@/renderer/composables/useWindowMode';
 

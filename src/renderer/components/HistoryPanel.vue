@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { companionState, type HistoryEntry } from '@/renderer/composables/companionState';
+import { companionState, type HistoryEntry } from '@/renderer/stores/companion';
 import { clearHistory, formatTime, historyMetaText } from '@/renderer/composables/useHistory';
 import { formatText, textFor } from '@/renderer/composables/companionText';
 

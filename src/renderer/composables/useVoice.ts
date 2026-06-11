@@ -3,7 +3,7 @@ import {
   VOICE_SEGMENT_MS,
   VOICE_WAKE_PHRASE
 } from '@/renderer/entity';
-import { companionState, setCompactAnswer } from '@/renderer/composables/companionState';
+import { companionState, setCompactAnswer } from '@/renderer/stores/companion';
 import { errorMessage } from '@/renderer/composables/errorMessage';
 import { formatText, textFor } from '@/renderer/composables/companionText';
 import { buildSettingsPayload } from '@/renderer/composables/settingsPayload';

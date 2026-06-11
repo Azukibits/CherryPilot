@@ -1,4 +1,4 @@
-import { companionState, type HistoryEntry } from '@/renderer/composables/companionState';
+import { companionState, type HistoryEntry } from '@/renderer/stores/companion';
 import { formatText, UI_TEXT, textFor } from '@/renderer/composables/companionText';
 import { HISTORY_KEY } from '@/renderer/entity';
 

@@ -1,5 +1,5 @@
 import { LAST_PROVIDER_INDEX } from '@/renderer/entity';
-import { companionState } from '@/renderer/composables/companionState';
+import { companionState } from '@/renderer/stores/companion';
 import { textFor } from '@/renderer/composables/companionText';
 
 // 从响应式 provider 状态中提取可保存的接口配置。

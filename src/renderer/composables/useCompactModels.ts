@@ -1,4 +1,4 @@
-import { companionState, setCompactAnswer, setStatusText, type ProviderState } from '@/renderer/composables/companionState';
+import { companionState, setCompactAnswer, setStatusText, type ProviderState } from '@/renderer/stores/companion';
 import { errorMessage } from '@/renderer/composables/errorMessage';
 import { formatText, textFor } from '@/renderer/composables/companionText';
 import { buildSettingsPayload, providerDisplayName } from '@/renderer/composables/settingsPayload';

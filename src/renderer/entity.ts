@@ -2,7 +2,7 @@ export type GuideLanguage = 'zh' | 'en' | 'ja';
 
 export const AUTO_COMPACT_AFTER_MS = 3000;
 export const AGENT_TAP_DELAY_MS = 370;
-export const AGENT_DOUBLE_TAP_MS = 360;
+export const AGENT_DOUBLE_TAP_MS = 260;
 export const HISTORY_KEY = 'companion.history.v2';
 export const GUIDE_LANGUAGE_KEY = 'companion.guide.language';
 export const VOICE_WAKE_PHRASE = 'hi cherry';

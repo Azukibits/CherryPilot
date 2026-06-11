@@ -1,4 +1,4 @@
-import { companionState, setBusy, setCompactAnswer, setStatusText } from '@/renderer/composables/companionState';
+import { companionState, setBusy, setCompactAnswer, setStatusText } from '@/renderer/stores/companion';
 import { errorMessage } from '@/renderer/composables/errorMessage';
 import { formatText, textFor } from '@/renderer/composables/companionText';
 import { buildSettingsPayload } from '@/renderer/composables/settingsPayload';

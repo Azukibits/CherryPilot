@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import ProviderCard from '@/renderer/components/ProviderCard.vue';
-import { companionState, setBusy, setStatusText } from '@/renderer/composables/companionState';
+import { companionState, setBusy, setStatusText } from '@/renderer/stores/companion';
 import { errorMessage } from '@/renderer/composables/errorMessage';
 import { formatText, GUIDE_CONTENT, GUIDE_LANGUAGE_KEY, normalizeGuideLanguage, textFor, type GuideLanguage } from '@/renderer/composables/companionText';
 import {

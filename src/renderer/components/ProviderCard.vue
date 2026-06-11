@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick } from 'vue';
-import type { ProviderState } from '@/renderer/composables/companionState';
+import type { ProviderState } from '@/renderer/stores/companion';
 
 // 父组件传入的接口配置和显示文案，本组件只负责渲染单张接口卡片。
 const props = defineProps<{
@@ -177,7 +177,283 @@ async function handleApiKeyKeydown(event: KeyboardEvent) {
 </template>
 
 <style scoped lang="less">
-.secret-input {
-  -webkit-text-security: disc;
+.provider-card {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid rgba(157, 178, 194, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.032);
+}
+
+.local-provider-card {
+  border-color: rgba(67, 240, 206, 0.24);
+  background: linear-gradient(180deg, rgba(67, 240, 206, 0.06), rgba(255, 255, 255, 0.028));
+  box-shadow: inset 3px 0 0 rgba(67, 240, 206, 0.34);
+}
+
+.provider-head {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.provider-head strong {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 16px;
+}
+
+.provider-head span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.provider-card .field:first-of-type {
+  margin-top: 7px;
+  margin-bottom: 7px;
+}
+
+.field {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  color: #a7b4c0;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.field:first-of-type {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.field-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(144px, 0.7fr);
+  gap: 8px;
+}
+
+.field input,
+textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(157, 178, 194, 0.2);
+  border-radius: 7px;
+  outline: 0;
+  color: var(--ink);
+  background: rgba(3, 7, 12, 0.62);
+  transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+.field input {
+  height: 32px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+.field input::placeholder,
+textarea::placeholder {
+  color: #526170;
+}
+
+.field input:focus,
+textarea:focus {
+  border-color: rgba(67, 240, 206, 0.58);
+  box-shadow: 0 0 0 3px rgba(67, 240, 206, 0.1);
+  background: rgba(5, 9, 15, 0.78);
+}
+
+.model-picker {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  gap: 6px;
+}
+
+.model-combo {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  gap: 6px;
+}
+
+.field-icon-button,
+.mini-button,
+.toolbar-command {
+  border: 1px solid rgba(157, 178, 194, 0.2);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.field-icon-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+}
+
+.field-icon-button svg,
+.mini-button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.field-icon-button:hover:not(:disabled),
+.model-combo.is-open .field-icon-button,
+.mini-button:hover:not(:disabled),
+.toolbar-command:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: rgba(67, 240, 206, 0.38);
+  background: rgba(67, 240, 206, 0.1);
+}
+
+.field-icon-button:disabled,
+.mini-button:disabled,
+.toolbar-command:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.field-icon-button.is-loading svg {
+  animation: spin 900ms linear infinite;
+}
+
+.model-menu {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 0;
+  right: -38px;
+  z-index: 50;
+  max-height: 166px;
+  display: none;
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid rgba(157, 178, 194, 0.26);
+  border-radius: 8px;
+  background: rgba(8, 12, 18, 0.98);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.055);
+}
+
+.model-combo.is-open .model-menu {
+  display: grid;
+  gap: 4px;
+}
+
+.model-option {
+  min-width: 0;
+  height: 30px;
+  padding: 0 8px;
+  overflow: hidden;
+  border-radius: 6px;
+  color: #dfe8ed;
+  background: transparent;
+  font-size: 12px;
+  text-align: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.model-option:hover {
+  color: #fff;
+  background: rgba(67, 240, 206, 0.12);
+}
+
+.model-empty {
+  padding: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.provider-card.is-light{
+  border-color: rgba(63, 59, 50, 0.13);
+  background: linear-gradient(180deg, rgba(255, 248, 236, 0.86), rgba(238, 244, 239, 0.82));
+  box-shadow: inset 3px 0 0 rgba(214, 63, 99, 0.3), 0 8px 18px rgba(52, 45, 35, 0.06);
+}
+
+.provider-card.is-light:nth-child(2 ){
+  box-shadow: inset 3px 0 0 rgba(20, 121, 111, 0.28), 0 8px 18px rgba(52, 45, 35, 0.06);
+}
+
+.provider-card.is-light:nth-child(3 ){
+  box-shadow: inset 3px 0 0 rgba(185, 120, 22, 0.3), 0 8px 18px rgba(52, 45, 35, 0.06);
+}
+
+.provider-card.is-light.local-provider-card{
+  border-color: rgba(20, 121, 111, 0.2);
+  background: linear-gradient(180deg, rgba(225, 241, 236, 0.9), rgba(255, 248, 236, 0.82));
+  box-shadow: inset 3px 0 0 rgba(20, 121, 111, 0.34), 0 8px 18px rgba(52, 45, 35, 0.06);
+}
+
+.provider-card.is-light .provider-head strong{
+  color: #18221f;
+}
+
+.provider-card.is-light .provider-head span{
+  color: #6b746f;
+}
+
+.provider-card.is-light .field input::placeholder,
+.provider-card.is-light textarea::placeholder{
+  color: #8b938b;
+}
+
+.provider-card.is-light .field input,
+.provider-card.is-light textarea {
+  border-color: rgba(54, 59, 52, 0.16);
+  color: #1d2926;
+  background: linear-gradient(180deg, rgba(255, 253, 247, 0.92), rgba(244, 247, 243, 0.86));
+}
+
+.provider-card.is-light .field input:focus,
+.provider-card.is-light textarea:focus {
+  border-color: rgba(214, 63, 99, 0.34);
+  background: rgba(255, 252, 246, 0.96);
+  box-shadow: 0 0 0 3px rgba(214, 63, 99, 0.09);
+}
+
+.provider-card.is-light .field-icon-button,
+.provider-card.is-light .mini-button,
+.provider-card.is-light .toolbar-command {
+  color: #596662;
+  border-color: rgba(54, 59, 52, 0.15);
+  background: rgba(250, 248, 240, 0.74);
+}
+
+.provider-card.is-light .field-icon-button:hover:not(:disabled),
+.provider-card.is-light .model-combo.is-open .field-icon-button,
+.provider-card.is-light .mini-button:hover:not(:disabled),
+.provider-card.is-light .toolbar-command:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: rgba(214, 63, 99, 0.28);
+  background: rgba(255, 232, 224, 0.72);
+}
+
+.provider-card.is-light .model-menu {
+  border-color: rgba(54, 59, 52, 0.18);
+  color: var(--ink);
+  background: rgba(255, 251, 242, 0.97);
+  box-shadow: 0 18px 40px rgba(52, 45, 35, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.provider-card.is-light .model-option {
+  color: #22302d;
+}
+
+.provider-card.is-light .model-option:hover {
+  color: #8f203d;
+  background: rgba(255, 232, 224, 0.78);
+}
+
+.provider-card.is-light .model-empty {
+  color: #758079;
 }
 </style>

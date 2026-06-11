@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import CompactShell from '@/renderer/components/CompactShell.vue';
 import MainWindow from '@/renderer/views/MainWindow.vue';
-import { companionState, useBodyDatasetSync } from '@/renderer/composables/companionState';
+import { companionState } from '@/renderer/stores/companion';
 import { useCompanionLifecycle } from '@/renderer/composables/useCompanionLifecycle';
 
 const state = companionState;
@@ -26,7 +26,6 @@ const appClasses = computed(() => {
   };
 });
 
-useBodyDatasetSync();
 useCompanionLifecycle();
 </script>
 

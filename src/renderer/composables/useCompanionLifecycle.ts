@@ -1,6 +1,20 @@
 import { onMounted, onUnmounted, watch } from 'vue';
 import { UI_TEXT } from '@/renderer/entity';
-import { companionState, setCompactAnswer } from '@/renderer/composables/companionState';
+import { companionState, setCompactAnswer } from '@/renderer/stores/companion';
+import {
+  setCompactHistoryPanelOpenState,
+  setCompactModelPanelOpenState
+} from '@/renderer/stores/companion-answer';
+import {
+  setActiveContextState,
+  setScreenshotPreviewOpenState
+} from '@/renderer/stores/companion-context';
+import {
+  enterWindowFileDragState,
+  leaveWindowFileDragState,
+  resetWindowFileDragState,
+  setPointerInWindowState
+} from '@/renderer/stores/companion-window';
 import { textFor } from '@/renderer/composables/companionText';
 import { ingestFileList, handleLanShareReceived, setScreenshot } from '@/renderer/composables/useContextSources';
 import { loadHistory } from '@/renderer/composables/useHistory';
@@ -11,6 +25,7 @@ import {
   closeProviderMenus,
   hideExitContextBlock,
   loadContext,
+  revealCompactTools,
   scheduleAutoCompact
 } from '@/renderer/composables/useWindowMode';
 
@@ -38,7 +53,7 @@ export function useCompanionLifecycle() {
       && !target?.closest?.('#compactModelPanel')
       && !target?.closest?.('#compactModelButton')
     ) {
-      companionState.compactModelPanelOpen = false;
+      setCompactModelPanelOpenState(companionState, false);
     }
 
     if (
@@ -46,7 +61,7 @@ export function useCompanionLifecycle() {
       && !target?.closest?.('#compactHistoryPanel')
       && !target?.closest?.('#compactHistoryButton')
     ) {
-      companionState.compactHistoryPanelOpen = false;
+      setCompactHistoryPanelOpenState(companionState, false);
     }
 
     if (
@@ -54,7 +69,7 @@ export function useCompanionLifecycle() {
       && !target?.closest?.('#compactScreenshotPreviewPanel')
       && !target?.closest?.('#compactScreenshotPreviewButton')
     ) {
-      companionState.screenshotPreviewOpen = false;
+      setScreenshotPreviewOpenState(companionState, false);
     }
   };
 
@@ -64,7 +79,7 @@ export function useCompanionLifecycle() {
       return;
     }
 
-    companionState.pointerInWindow = true;
+    setPointerInWindowState(companionState, true);
     clearAutoCompact();
   };
 
@@ -74,13 +89,13 @@ export function useCompanionLifecycle() {
       return;
     }
 
-    companionState.pointerInWindow = true;
+    setPointerInWindowState(companionState, true);
     clearAutoCompact();
   };
 
   // 鼠标离开展开态窗口后尝试启动自动收起。
   const onMouseLeave = () => {
-    companionState.pointerInWindow = false;
+    setPointerInWindowState(companionState, false);
     scheduleAutoCompact();
   };
 
@@ -116,8 +131,7 @@ export function useCompanionLifecycle() {
   // 拖拽进入窗口时显示拖拽态，支持多层 dragenter/dragleave 计数。
   const onDragEnter = (event: DragEvent) => {
     event.preventDefault();
-    companionState.dragDepth += 1;
-    companionState.dragging = true;
+    enterWindowFileDragState(companionState);
   };
 
   // 拖拽悬停时声明 copy 行为，避免浏览器默认打开文件。
@@ -132,18 +146,13 @@ export function useCompanionLifecycle() {
   // 拖拽离开时递减层级，回到 0 才退出拖拽态。
   const onDragLeave = (event: DragEvent) => {
     event.preventDefault();
-    companionState.dragDepth = Math.max(0, companionState.dragDepth - 1);
-
-    if (companionState.dragDepth === 0) {
-      companionState.dragging = false;
-    }
+    leaveWindowFileDragState(companionState);
   };
 
   // 文件释放到窗口后读取附件并追加到上下文。
   const onDrop = async (event: DragEvent) => {
     event.preventDefault();
-    companionState.dragDepth = 0;
-    companionState.dragging = false;
+    resetWindowFileDragState(companionState);
     await ingestFileList(event.dataTransfer?.files);
   };
 
@@ -172,7 +181,7 @@ export function useCompanionLifecycle() {
 
     // 主进程推送外部窗口标题更新。
     const contextCleanup = window.companion.onContextUpdated?.((context: CompanionActiveContext) => {
-      companionState.activeContext = context || companionState.activeContext;
+      setActiveContextState(companionState, context || companionState.activeContext);
     });
     // 主进程推送窗口模式变化，renderer 只同步 UI 状态。
     const modeCleanup = window.companion.onWindowModeChanged?.(applyWindowMode);
@@ -181,8 +190,7 @@ export function useCompanionLifecycle() {
       setScreenshot(payload);
       const modeState = await window.companion.setWindowMode('compact');
       applyWindowMode(modeState);
-      await window.companion.revealCompactWindow();
-      companionState.revealed = true;
+      await revealCompactTools();
     });
     // 主进程截图失败时把错误展示到悬浮回答区。
     const screenshotErrorCleanup = window.companion.onScreenshotError?.((message: string) => {

@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 import CherryMark from '@/renderer/components/CherryMark.vue';
 import HiddenFileInput from '@/renderer/components/HiddenFileInput.vue';
 import HistoryPanel from '@/renderer/components/HistoryPanel.vue';
-import { companionState, setCompactAnswer, type HistoryEntry } from '@/renderer/composables/companionState';
+import { companionState, setCompactAnswer, type HistoryEntry } from '@/renderer/stores/companion';
 import { textFor } from '@/renderer/composables/companionText';
 import { askFromCompact } from '@/renderer/composables/useAssistant';
 import {
@@ -140,7 +140,10 @@ watch(
     class="compact-shell"
     :class="shellClasses"
   >
-    <div class="compact-agent-zone">
+    <div
+      class="compact-agent-zone"
+      :class="{ 'hide-zone': state.revealAnimation }"
+    >
       <button
         id="agentIcon"
         class="agent-icon"
@@ -617,7 +620,10 @@ watch(
   display: grid;
   place-items: center;
 }
-
+.hide-zone{
+  opacity: 0;
+  pointer-events: none !important;
+}
 .agent-icon {
   position: relative;
   width: 46px;
