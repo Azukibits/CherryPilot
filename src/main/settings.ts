@@ -43,12 +43,15 @@ function normalizePerformance(value = {}) {
 
 function normalizeLanShare(value = {}) {
   const port = Math.max(0, Math.min(65535, Number(value.port || 0) || 0));
-  const token = String(value.token || '').trim();
+  const token = String(value.token || '').trim();
+  const deviceId = String(value.deviceId || '').trim();
 
   return {
     enabled: Boolean(value.enabled),
     port,
-    token
+    token,
+
+    deviceId
   };
 }
 

@@ -12,6 +12,7 @@ export interface LanShareState {
   enabled: boolean;
   port: number;
   token: string;
+  deviceId: string;
 }
 
 export interface RegionCaptureState {

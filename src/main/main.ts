@@ -1,6 +1,6 @@
 // 主进程组合入口
 // 业务逻辑已拆到独立模块，这里只保留 Electron 生命周期编排。
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, Menu } from 'electron';
 import { applyPerformanceRuntime, refreshActiveWindowTitle, stopContextTimer } from '@/main/active-context';
 import { registerIpcHandlers } from '@/main/ipc-handlers';
 import { startLanShare, stopLanShare } from '@/main/lan-share';
@@ -18,6 +18,7 @@ if (process.platform === 'win32') {
 registerIpcHandlers();
 
 app.whenReady().then(async () => {
+  Menu.setApplicationMenu(Menu.buildFromTemplate([{ role: 'editMenu' }]));
   configurePermissions();
   createWindow();
   configureAutoUpdates().catch(() => null);

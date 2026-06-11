@@ -8,7 +8,8 @@ import { app } from 'electron';
 export const APP_TITLE = 'CherryPilot';
 export const PROJECT_ROOT = app.isPackaged ? app.getAppPath() : path.resolve(__dirname, '..');
 export const SOURCE_ROOT = path.join(PROJECT_ROOT, 'src');
-export const RENDERER_DIST = path.join(PROJECT_ROOT, 'dist-renderer');
+export const RENDERER_DIST = path.join(PROJECT_ROOT, 'dist-renderer');
+export const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || '';
 export const PRELOAD_PATH = path.join(__dirname, 'preload.cjs');
 export const CAPTURE_PRELOAD_PATH = path.join(__dirname, 'capture-preload.cjs');
 export const APP_ICON = path.join(SOURCE_ROOT, 'assets', 'cherrypilot.png');
@@ -66,7 +67,9 @@ export const DEFAULT_SETTINGS = {
   lanShare: {
     enabled: false,
     port: 0,
-    token: ''
+    token: '',
+
+    deviceId: ''
   }
 };
 // 展开态、悬浮图标态和悬浮工具态的窗口尺寸。

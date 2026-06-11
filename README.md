@@ -16,16 +16,17 @@ CherryPilot is an Electron desktop companion that stays above your workspace as 
 
 ## Features
 
-- Floating compact assistant with pinning, drag, edge docking, and expanded settings panel.
+- Floating assistant with three fast modes: docked icon, single-click compact prompt, and double-click main panel.
+- Pinning, drag, edge docking, and expanded settings panel controls.
 - Region screenshots with preview/delete before the image is sent as context.
 - File context ingestion for PDF, DOCX, Markdown, logs, JSON, HTML/CSS/JS/TS, Python, Java, C/C++ and plain text.
 - Voice wake phrase flow, transcription, question answering, and image generation commands.
 - Multiple OpenAI-compatible provider slots plus local Ollama / LM Studio style endpoints.
 - Model list refresh and quick model switching from the compact panel.
-- History panel with short question titles and full-answer detail view.
+- Streaming answer output in the compact prompt, with history stored in the compact history panel.
 - Optional workspace authorization for AI file read/write and project creation.
 - Separate command permission for guarded build/debug/test/publish commands.
-- LAN sharing server for trusted local-network devices.
+- AirDrop-style LAN sharing between nearby CherryPilot devices, with device discovery, identity verification, receiver approval, and one-time transfer tickets.
 - Low CPU mode and startup launch settings.
 - Desktop auto-update support through `electron-updater`.
 
@@ -61,6 +62,19 @@ Make sure no capture window is already open, then retry the screenshot button or
 ### Workspace tools are unavailable
 
 Choose a workspace folder first. Command execution also requires the separate command-access toggle.
+
+### LAN devices do not appear
+
+LAN sharing is app-to-app discovery. The other device must also run CherryPilot, enable LAN sharing, and stay on the same local subnet.
+
+If the nearby-device list stays empty:
+
+- Check the LAN diagnostics line in Settings. It should show a private address such as `192.168.x.x`, `10.x.x.x`, or `172.16-31.x.x`.
+- Allow CherryPilot through the OS firewall. Discovery uses UDP `49328`; file receiving uses the HTTP port shown in the diagnostics line.
+- Disable guest Wi-Fi/client isolation/AP isolation on the router.
+- Temporarily disconnect VPNs or virtual network adapters if they put the machines on different subnets.
+
+For app-to-app transfer, discovery packets do not include the receiver token. The sender verifies `/device-info`, the receiver confirms the request, and CherryPilot uses a 60-second one-time ticket for the actual upload.
 
 ### Build artifacts look stale
 
@@ -130,26 +144,31 @@ The app blocks direct opening of executable/script file types such as `.exe`, `.
 ## Project Structure
 
 ```text
-src/main/main.ts              Electron main process, windows, IPC, AI requests, tools, LAN sharing
-src/main/preload.ts           Main-window bridge API
-src/main/capture-preload.ts   Capture-window bridge API
-src/renderer/App.vue          Vue 3 renderer lifecycle shell
-src/renderer/main.ts          Vue/Vite renderer entry
-src/renderer/controller.ts    UI controller, compact prompt, localization, settings, history
-src/capture/main.ts           Capture interaction
-src/index.html                Main window HTML shell
-src/capture.html              Capture window HTML shell
-src/styles.css                Main UI styles
-src/capture.css               Capture styles
-src/assets/                   App icons
-vite.renderer.config.ts       Vite renderer build config
-vite.main.config.ts           Vite Electron main/preload build config
-scripts/                      Utility scripts
+src/main/main.ts                  Electron app lifecycle
+src/main/window-manager.ts        Window modes, compact docking, drag, and bounds
+src/main/ipc-handlers.ts          Renderer-to-main IPC handlers
+src/main/lan-share.ts             LAN discovery, device verification, approval, and file transfer
+src/main/ai/                      AI providers, chat streaming, image, voice, and computer tools
+src/main/preload/                 Main-window bridge API
+src/main/capture-preload.ts       Capture-window bridge API
+src/renderer/App.vue              Vue 3 renderer lifecycle shell
+src/renderer/components/          Compact shell, settings, history, providers, and panels
+src/renderer/composables/         Shared renderer state, assistant flow, settings, text, and lifecycle hooks
+src/renderer/views/               Main window views
+src/renderer/main.ts              Vue/Vite renderer entry
+src/capture/main.ts               Capture interaction
+src/index.html                    Main window HTML shell
+src/capture.html                  Capture window HTML shell
+src/styles.css                    Shared UI styles
+src/assets/                       App icons
+vite.renderer.config.ts           Vite renderer build config
+vite.main.config.ts               Vite Electron main/preload build config
+scripts/                          Utility scripts
 ```
 
 ## Status
 
-CherryPilot is an early desktop app. The current priority is keeping the desktop Electron experience stable while gradually splitting the migrated renderer controller into smaller Vue/TypeScript modules.
+CherryPilot is an early desktop app. The current priority is keeping the desktop Electron experience stable while improving the compact workflow, streaming responses, and secure local-network transfer.
 
 ## License
 

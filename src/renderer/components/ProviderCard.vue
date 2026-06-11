@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { nextTick } from 'vue';
 import type { ProviderState } from '@/renderer/composables/companionState';
 
 // 父组件传入的接口配置和显示文案，本组件只负责渲染单张接口卡片。
@@ -23,6 +24,41 @@ const emit = defineEmits<{
 function updateField(field: 'apiKey' | 'baseUrl' | 'model', event: Event) {
   emit('updateField', props.index, field, (event.target as HTMLInputElement).value);
 }
+
+async function handleApiKeyKeydown(event: KeyboardEvent) {
+  if (event.altKey || event.key.toLowerCase() !== 'x' || (!event.ctrlKey && !event.metaKey)) {
+    return;
+  }
+
+  const input = event.currentTarget as HTMLInputElement;
+  const start = input.selectionStart ?? 0;
+  const end = input.selectionEnd ?? 0;
+
+  if (start === end) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const selectedText = input.value.slice(start, end);
+  const nextValue = `${input.value.slice(0, start)}${input.value.slice(end)}`;
+
+  try {
+    await window.companion.writeClipboardText?.(selectedText);
+  } catch {
+    try {
+      await navigator.clipboard?.writeText(selectedText);
+    } catch {
+      // Clipboard write can be blocked by OS policy; still perform the cut locally.
+    }
+  }
+
+  input.value = nextValue;
+  emit('updateField', props.index, 'apiKey', nextValue);
+  await nextTick();
+  input.setSelectionRange(start, start);
+}
 </script>
 
 <template>
@@ -40,12 +76,14 @@ function updateField(field: 'apiKey' | 'baseUrl' | 'model', event: Event) {
       <span>{{ labels.apiKey }}</span>
       <input
         :id="provider.domIds.apiKey"
+        class="secret-input"
         :value="provider.apiKey"
-        type="password"
+        type="text"
         spellcheck="false"
         autocomplete="off"
         :placeholder="provider.local ? labels.localKeyPlaceholder : 'sk-...'"
         @input="updateField('apiKey', $event)"
+        @keydown="handleApiKeyKeydown"
       />
     </label>
 
@@ -137,3 +175,9 @@ function updateField(field: 'apiKey' | 'baseUrl' | 'model', event: Event) {
     </div>
   </section>
 </template>
+
+<style scoped lang="less">
+.secret-input {
+  -webkit-text-security: disc;
+}
+</style>

@@ -16,3 +16,61 @@
     <rect class="pixel-shadow" x="20" y="40" width="12" height="4" />
   </g>
 </template>
+
+
+<style scoped lang="less">
+.pixel-mark {
+  shape-rendering: crispEdges;
+}
+
+.pixel-frame,
+.pixel-core,
+.pixel-soft,
+.pixel-stem,
+.pixel-leaf,
+.pixel-leaf-mid,
+.pixel-leaf-dark,
+.pixel-cherry,
+.pixel-cherry-mid,
+.pixel-cherry-dark,
+.pixel-shine,
+.pixel-shadow {
+  stroke: none;
+}
+
+.pixel-stem {
+  fill: var(--leaf);
+}
+
+.pixel-leaf {
+  fill: var(--leaf);
+}
+
+.pixel-leaf-mid {
+  fill: var(--leaf-mid);
+}
+
+.pixel-leaf-dark {
+  fill: var(--leaf-deep);
+}
+
+.pixel-cherry {
+  fill: var(--cherry);
+}
+
+.pixel-cherry-mid {
+  fill: var(--cherry-mid);
+}
+
+.pixel-cherry-dark {
+  fill: var(--cherry-deep);
+}
+
+.pixel-shine {
+  fill: var(--cherry-shine);
+}
+
+.pixel-shadow {
+  fill: rgba(60, 8, 24, 0.72);
+}
+</style>

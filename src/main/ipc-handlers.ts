@@ -1,14 +1,14 @@
 // IPC 桥接处理注册
 // 把 preload 暴露的方法按业务映射到主进程服务，main.ts 只负责调用注册入口。
-import { ipcMain } from 'electron';
+import { clipboard, ipcMain } from 'electron';
 import { refreshActiveWindowTitle } from '@/main/active-context';
-import { analyzeContext, analyzeScreenshot } from '@/main/ai/chat';
+import { analyzeContext, analyzeContextStream, analyzeScreenshot } from '@/main/ai/chat';
 import { selectWorkspaceRoot } from '@/main/ai/computer-tools';
 import { generateImage } from '@/main/ai/image';
 import { listModels } from '@/main/ai/provider-client';
 import { transcribeAudio } from '@/main/ai/voice';
 import { ingestFiles, selectAnalysisSources } from '@/main/file-service';
-import { getLanShareStatus, setLanShareEnabled } from '@/main/lan-share';
+import { getLanShareDevices, getLanShareStatus, sendLanShareToDevice, setLanShareEnabled } from '@/main/lan-share';
 import { cancelRegionCapture, completeRegionCapture, startRegionCapture } from '@/main/screen-capture';
 import { readSettings, saveSettings, getStartupSettings, setStartupSettings } from '@/main/settings';
 import {
@@ -29,6 +29,18 @@ export function registerIpcHandlers() {
   ipcMain.handle('screen:select-region', () => startRegionCapture());
   ipcMain.handle('screenshot:analyze', (_event, payload) => analyzeScreenshot(payload));
   ipcMain.handle('context:analyze', (_event, payload) => analyzeContext(payload));
+  ipcMain.handle('context:analyze-stream', (event, payload = {}) => {
+    const requestId = String(payload?.requestId || '');
+
+    return analyzeContextStream(payload, {
+      onDelta: (delta: string) => {
+        event.sender.send('context:analyze-stream:chunk', {
+          requestId,
+          delta
+        });
+      }
+    });
+  });
   ipcMain.handle('files:ingest', (_event, payload) => ingestFiles(payload?.paths || []));
   ipcMain.handle('files:select-analysis-sources', () => selectAnalysisSources());
   ipcMain.handle('settings:get', () => readSettings());
@@ -37,10 +49,16 @@ export function registerIpcHandlers() {
   ipcMain.handle('startup:set', (_event, enabled) => setStartupSettings(enabled));
   ipcMain.handle('lan-share:get', () => getLanShareStatus());
   ipcMain.handle('lan-share:set', (_event, enabled) => setLanShareEnabled(Boolean(enabled)));
+  ipcMain.handle('lan-share:devices', () => getLanShareDevices());
+  ipcMain.handle('lan-share:send-to-device', (_event, deviceId) => sendLanShareToDevice(deviceId));
   ipcMain.handle('permissions:select-workspace', () => selectWorkspaceRoot());
   ipcMain.handle('models:list', (_event, payload) => listModels(payload));
   ipcMain.handle('voice:transcribe', (_event, payload) => transcribeAudio(payload));
   ipcMain.handle('image:generate', (_event, payload) => generateImage(payload));
+  ipcMain.handle('clipboard:write-text', (_event, text) => {
+    clipboard.writeText(String(text || ''));
+    return true;
+  });
   ipcMain.handle('window:get-mode', () => emitWindowMode());
   ipcMain.handle('window:set-mode', (_event, mode) => setWindowMode(mode));
   ipcMain.handle('window:compact-drag-start', (_event, point) => beginCompactDrag(point));

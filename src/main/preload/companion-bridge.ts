@@ -23,6 +23,7 @@ export function createCompanionBridge() {
     selectRegion: () => ipcRenderer.invoke('screen:select-region'),
     analyzeScreenshot: (payload: unknown) => ipcRenderer.invoke('screenshot:analyze', payload),
     analyzeContext: (payload: unknown) => ipcRenderer.invoke('context:analyze', payload),
+    analyzeContextStream: (payload: unknown) => ipcRenderer.invoke('context:analyze-stream', payload),
     transcribeAudio: (payload: unknown) => ipcRenderer.invoke('voice:transcribe', payload),
     generateImage: (payload: unknown) => ipcRenderer.invoke('image:generate', payload),
     ingestFiles: (paths: string[]) => ipcRenderer.invoke('files:ingest', { paths }),
@@ -33,6 +34,8 @@ export function createCompanionBridge() {
     setStartupEnabled: (enabled: boolean) => ipcRenderer.invoke('startup:set', Boolean(enabled)),
     getLanShareStatus: () => ipcRenderer.invoke('lan-share:get'),
     setLanShareEnabled: (enabled: boolean) => ipcRenderer.invoke('lan-share:set', Boolean(enabled)),
+    getLanShareDevices: () => ipcRenderer.invoke('lan-share:devices'),
+    sendLanShareToDevice: (deviceId: string) => ipcRenderer.invoke('lan-share:send-to-device', deviceId),
     selectWorkspaceRoot: () => ipcRenderer.invoke('permissions:select-workspace'),
     listModels: (payload: unknown) => ipcRenderer.invoke('models:list', payload),
     getWindowMode: () => ipcRenderer.invoke('window:get-mode'),
@@ -46,6 +49,7 @@ export function createCompanionBridge() {
     minimizeWindow: () => ipcRenderer.invoke('window:minimize'),
     closeWindow: () => ipcRenderer.invoke('window:close'),
     togglePin: () => ipcRenderer.invoke('window:toggle-pin'),
+    writeClipboardText: (text: string) => ipcRenderer.invoke('clipboard:write-text', String(text || '')),
     getPathForFile: (file: FileWithOptionalPath) => {
       try {
         return webUtils?.getPathForFile?.(file) || file?.path || '';
@@ -54,10 +58,12 @@ export function createCompanionBridge() {
       }
     },
     onContextUpdated: (callback: BridgeCallback) => listen('context-updated', callback),
+    onAnalyzeContextChunk: (callback: BridgeCallback) => listen('context:analyze-stream:chunk', callback),
     onWindowModeChanged: (callback: BridgeCallback) => listen('window-mode-changed', callback),
     onScreenshotCreated: (callback: BridgeCallback) => listen('screenshot-created', callback),
     onScreenshotError: (callback: BridgeCallback) => listen('screenshot-error', callback),
     onLanShareReceived: (callback: BridgeCallback) => listen('lan-share-received', callback),
+    onLanShareDevicesChanged: (callback: BridgeCallback) => listen('lan-share-devices-changed', callback),
     onUpdateStatus: (callback: BridgeCallback) => listen('update-status', callback)
   };
 }

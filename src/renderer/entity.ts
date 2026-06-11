@@ -1,7 +1,7 @@
 export type GuideLanguage = 'zh' | 'en' | 'ja';
 
 export const AUTO_COMPACT_AFTER_MS = 3000;
-export const AGENT_TAP_DELAY_MS = 165;
+export const AGENT_TAP_DELAY_MS = 370;
 export const AGENT_DOUBLE_TAP_MS = 360;
 export const HISTORY_KEY = 'companion.history.v2';
 export const GUIDE_LANGUAGE_KEY = 'companion.guide.language';
@@ -131,6 +131,15 @@ const zhText = {
   lanAllow: '允许同一局域网设备发送资料',
   lanUrlIdle: '开启后显示访问地址',
   lanNoAddress: '已开启，等待网络地址',
+  lanDevices: '附近设备',
+  lanDevicesEmpty: '暂无可用设备',
+  lanDeviceCount: '{count} 台附近设备',
+  lanDevicesHint: '点击设备名称，选择文件后直接发送。',
+  lanDeviceAddress: '{address}',
+  lanRefresh: '刷新设备',
+  lanSending: '正在发送到 {device}...',
+  lanSent: '已发送 {count} 项到 {device}',
+  lanSendFailed: '发送失败',
   guide: '使用说明',
   saveConfig: '保存配置',
   history: '历史询问',
@@ -261,6 +270,15 @@ const enText: Record<TextKey, string> = {
   lanAllow: 'Allow devices on this LAN to send materials',
   lanUrlIdle: 'Enable to show the share address',
   lanNoAddress: 'Enabled, waiting for network address',
+  lanDevices: 'Nearby devices',
+  lanDevicesEmpty: 'No available devices',
+  lanDeviceCount: '{count} nearby device(s)',
+  lanDevicesHint: 'Click a device, choose files, and send directly.',
+  lanDeviceAddress: '{address}',
+  lanRefresh: 'Refresh devices',
+  lanSending: 'Sending to {device}...',
+  lanSent: 'Sent {count} item(s) to {device}',
+  lanSendFailed: 'Send failed',
   guide: 'Guide',
   saveConfig: 'Save config',
   history: 'History',
@@ -378,6 +396,18 @@ const jaText: Record<TextKey, string> = {
   enabled: 'オン',
   disabled: 'オフ',
   lanShare: 'LAN 共有',
+  lanAllow: '同じ LAN のデバイスから資料を受け取る',
+  lanUrlIdle: '有効にすると共有先が表示されます',
+  lanNoAddress: '有効です。ネットワークアドレスを待っています',
+  lanDevices: '近くのデバイス',
+  lanDevicesEmpty: '利用できるデバイスがありません',
+  lanDeviceCount: '{count} 台の近くのデバイス',
+  lanDevicesHint: 'デバイス名をクリックし、ファイルを選んで直接送信します。',
+  lanDeviceAddress: '{address}',
+  lanRefresh: 'デバイスを更新',
+  lanSending: '{device} に送信中...',
+  lanSent: '{count} 件を {device} に送信しました',
+  lanSendFailed: '送信に失敗しました',
   guide: 'ガイド',
   saveConfig: '設定を保存',
   history: '履歴',

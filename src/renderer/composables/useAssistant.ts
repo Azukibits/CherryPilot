@@ -13,6 +13,10 @@ const ft = (key: Parameters<typeof formatText>[1], values: Record<string, unknow
 );
 
 // 发起一次上下文分析请求，负责保存设置、组装截图/附件并写入历史记录。
+function createRequestId() {
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 export async function runAssistantRequest(
   question: string,
   options: { clearInput?: boolean; pendingText?: string } = {}
@@ -28,20 +32,37 @@ export async function runAssistantRequest(
   setBusy(true);
   setCompactAnswer(options.pendingText || t('thinking'), true);
 
+  let cleanup: CompanionCleanup | undefined;
+
   try {
     await window.companion.saveSettings(buildSettingsPayload());
 
-    const result = await window.companion.analyzeContext({
+    const requestId = createRequestId();
+    let streamedContent = '';
+    cleanup = window.companion.onAnalyzeContextChunk?.((payload) => {
+      if (payload?.requestId !== requestId || !payload.delta) {
+        return;
+      }
+
+      streamedContent += payload.delta;
+      setCompactAnswer(streamedContent, true);
+    });
+
+    const analyze = window.companion.analyzeContextStream || window.companion.analyzeContext;
+    const result = await analyze({
+      requestId,
       imageDataUrl: companionState.screenshotDataUrl,
       activeTitle: companionState.activeContext.checkedAt ? companionState.activeContext.title : '',
       note: trimmedQuestion,
       attachments
     });
 
-    setCompactAnswer(result.content);
+    const finalContent = result.content || streamedContent;
+
+    setCompactAnswer(finalContent);
     addHistory({
       question: trimmedQuestion || t('contextAnalysis'),
-      answer: result.content,
+      answer: finalContent,
       model: result.model,
       hasImage: Boolean(companionState.screenshotDataUrl),
       attachmentCount: attachments.length
@@ -57,6 +78,7 @@ export async function runAssistantRequest(
     setCompactAnswer(errorMessage(error, t('analysisFailed')));
     return false;
   } finally {
+    cleanup?.();
     setBusy(false);
   }
 }

@@ -85,7 +85,247 @@ function extractAssistantMessage(payload) {
   return message;
 }
 
-async function runChatCompletion({ baseUrl, apiKey, model, messages, settings }) {
+function normalizeTextDelta(value) {
+
+  if (typeof value === 'string') {
+
+    return value;
+
+  }
+
+  if (Array.isArray(value)) {
+
+    return value
+
+      .map((item) => (typeof item === 'string' ? item : item?.text || ''))
+
+      .join('');
+
+  }
+
+  return '';
+
+}
+
+function extractStreamDelta(payload) {
+
+  const choice = payload?.choices?.[0] || {};
+
+  const delta = choice.delta || {};
+
+  return normalizeTextDelta(delta.content || delta.text || delta.reasoning_content || choice.text || '');
+
+}
+
+async function postChatCompletionStream(baseUrl, apiKey, body, onDelta) {
+
+  const response = await fetch(getChatCompletionsUrl(baseUrl), {
+
+    method: 'POST',
+
+    headers: {
+
+      ...getAuthHeaders(apiKey, baseUrl),
+
+      'Content-Type': 'application/json'
+
+    },
+
+    body: JSON.stringify({
+
+      ...body,
+
+      stream: true
+
+    })
+
+  });
+
+  const contentType = response.headers.get('content-type') || '';
+
+  if (!response.ok) {
+
+    const errorText = await response.text().catch(() => '');
+
+    let message = `AI HTTP ${response.status}`;
+
+    try {
+
+      const payload = JSON.parse(errorText);
+
+      message = payload.error?.message || payload.message || message;
+
+    } catch {
+
+      message = errorText || message;
+
+    }
+
+    throw new Error(message);
+
+  }
+
+  if (!response.body || !contentType.includes('text/event-stream')) {
+
+    const payload = await response.json().catch(() => ({}));
+
+    const message = extractAssistantMessage(payload);
+
+    const content = normalizeTextDelta(message.content);
+
+    if (!content) {
+
+      throw new Error('AI 鏉╂柨娲栨稉铏光敄');
+
+    }
+
+    onDelta?.(content);
+
+    return {
+
+      content,
+
+      model: payload.model || body.model,
+
+      analyzedAt: new Date().toISOString()
+
+    };
+
+  }
+
+  const reader = response.body.getReader();
+
+  const decoder = new TextDecoder();
+
+  let buffer = '';
+
+  let content = '';
+
+  let responseModel = body.model;
+
+  const consumeBlock = (block) => {
+
+    const dataLines = block
+
+      .split(/\r?\n/)
+
+      .filter((line) => line.startsWith('data:'))
+
+      .map((line) => line.slice(5).trimStart());
+
+    if (dataLines.length === 0) {
+
+      return;
+
+    }
+
+    const data = dataLines.join('\n').trim();
+
+    if (!data || data === '[DONE]') {
+
+      return;
+
+    }
+
+    let payload = null;
+
+    try {
+
+      payload = JSON.parse(data);
+
+    } catch {
+
+      return;
+
+    }
+
+    responseModel = payload.model || responseModel;
+
+    const delta = extractStreamDelta(payload);
+
+    if (delta) {
+
+      content += delta;
+
+      onDelta?.(delta);
+
+    }
+
+  };
+
+  while (true) {
+
+    const { done, value } = await reader.read();
+
+    if (done) {
+
+      break;
+
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+
+    const blocks = buffer.split(/\r?\n\r?\n/);
+
+    buffer = blocks.pop() || '';
+
+    blocks.forEach(consumeBlock);
+
+  }
+
+  buffer += decoder.decode();
+
+  if (buffer.trim()) {
+
+    consumeBlock(buffer);
+
+  }
+
+  if (!content) {
+
+    throw new Error('AI 鏉╂柨娲栨稉铏光敄');
+
+  }
+
+  return {
+
+    content,
+
+    model: responseModel,
+
+    analyzedAt: new Date().toISOString()
+
+  };
+
+}
+
+async function runStreamingChatCompletion({ baseUrl, apiKey, model, messages, settings, onDelta }) {
+
+  const body = {
+
+    model,
+
+    temperature: 0.2,
+
+    messages
+
+  };
+
+  if (settings.computerAccess?.enabled) {
+
+    const result = await runChatCompletion({ baseUrl, apiKey, model, messages, settings });
+
+    onDelta?.(result.content);
+
+    return result;
+
+  }
+
+  return postChatCompletionStream(baseUrl, apiKey, body, onDelta);
+
+}
+
+async function runChatCompletion({ baseUrl, apiKey, model, messages, settings }) {
   const body = {
     model,
     temperature: 0.2,
@@ -154,7 +394,7 @@ async function runChatCompletion({ baseUrl, apiKey, model, messages, settings })
 }
 
 // 组合截图、附件和用户问题后调用聊天模型分析。
-export async function analyzeContext({ imageDataUrl, activeTitle, note, attachments }) {
+export async function analyzeContext({ imageDataUrl, activeTitle, note, attachments }, options = {}) {
   if (!imageDataUrl && (!attachments || attachments.length === 0) && !note) {
     throw new Error('请先截图、拖入文件，或输入要求');
   }
@@ -195,10 +435,22 @@ export async function analyzeContext({ imageDataUrl, activeTitle, note, attachme
     }
   ];
 
-  return runChatCompletion({ baseUrl, apiKey, model, messages, settings });
+  if (typeof options.onDelta === 'function') {
+
+    return runStreamingChatCompletion({ baseUrl, apiKey, model, messages, settings, onDelta: options.onDelta });
+
+  }
+
+  return runChatCompletion({ baseUrl, apiKey, model, messages, settings });
 }
 
 // 保留截图分析 IPC 的语义入口，内部复用上下文分析。
-export async function analyzeScreenshot(payload) {
+export async function analyzeContextStream(payload, options = {}) {
+
+  return analyzeContext(payload, options);
+
+}
+
+export async function analyzeScreenshot(payload) {
   return analyzeContext(payload);
 }

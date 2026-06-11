@@ -3,7 +3,7 @@
 // 负责截图覆盖层窗口、屏幕源抓取、区域裁剪和截图事件回传。
 import path from 'node:path';
 import { BrowserWindow, desktopCapturer, screen } from 'electron';
-import { CAPTURE_PRELOAD_PATH, CAPTURE_SETTLE_MS, RENDERER_DIST } from '@/main/entity';
+import { CAPTURE_PRELOAD_PATH, CAPTURE_SETTLE_MS, DEV_SERVER_URL, RENDERER_DIST } from '@/main/entity';
 import { mainState } from '@/main/state';
 import { hardenWindow } from '@/main/security';
 
@@ -93,7 +93,11 @@ export async function startRegionCapture() {
 
   hardenWindow(mainState.captureWindow);
   mainState.captureWindow.setAlwaysOnTop(true, 'screen-saver');
-  mainState.captureWindow.loadFile(path.join(RENDERER_DIST, 'capture.html'));
+  if (DEV_SERVER_URL) {
+    mainState.captureWindow.loadURL(`${DEV_SERVER_URL}/capture.html`);
+  } else {
+    mainState.captureWindow.loadFile(path.join(RENDERER_DIST, 'capture.html'));
+  }
   mainState.captureWindow.once('ready-to-show', () => {
     if (!mainState.captureWindow || mainState.captureWindow.isDestroyed()) {
       return;

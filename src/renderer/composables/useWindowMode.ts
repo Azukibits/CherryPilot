@@ -1,6 +1,5 @@
 import {
   AGENT_DOUBLE_TAP_MS,
-  AGENT_TAP_DELAY_MS,
   AUTO_COMPACT_AFTER_MS
 } from '@/renderer/entity';
 import { companionState } from '@/renderer/composables/companionState';
@@ -52,6 +51,10 @@ export function scheduleAutoCompact() {
 
 // 主进程负责真实窗口边界，renderer 只镜像界面需要的模式状态。
 export function applyWindowMode(nextState: CompanionWindowModeState | string | null | undefined) {
+  if (!nextState) {
+    return;
+  }
+
   const modeState: CompanionWindowModeState = typeof nextState === 'string'
     ? { mode: nextState }
     : (nextState || {});
@@ -111,13 +114,11 @@ export async function showExitContextBlock(event: Event) {
   if (companionState.windowMode !== 'compact') {
     return;
   }
-
   if (!companionState.revealed) {
     await window.companion.revealCompactWindow();
     companionState.revealed = true;
   }
-
-  companionState.contextMenuOpen = true;
+  companionState.contextMenuOpen = !companionState.contextMenuOpen;
 }
 
 // 点击悬浮球或退出按钮外部时隐藏退出上下文菜单。
@@ -136,8 +137,8 @@ export async function toggleCompactPanel() {
     companionState.revealed = false;
     return false;
   }
-
   await window.companion.revealCompactWindow();
+
   companionState.revealed = true;
   return true;
 }
@@ -175,21 +176,12 @@ export function handleAgentTap() {
 
   companionState.lastAgentTapAt = now;
   clearTimeout(companionState.agentTapTimer);
-
-  if (!companionState.revealed) {
-    toggleCompactPanel();
-    companionState.agentTapTimer = setTimeout(() => {
-      companionState.agentTapTimer = null;
-      companionState.lastAgentTapAt = 0;
-    }, AGENT_DOUBLE_TAP_MS);
-    return;
-  }
+  toggleCompactPanel();
 
   companionState.agentTapTimer = setTimeout(() => {
     companionState.agentTapTimer = null;
     companionState.lastAgentTapAt = 0;
-    toggleCompactPanel();
-  }, AGENT_TAP_DELAY_MS);
+  }, AGENT_DOUBLE_TAP_MS);
 }
 
 // 合并拖拽 move 事件到 requestAnimationFrame，降低 IPC 调用频率。

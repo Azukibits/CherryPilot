@@ -30,7 +30,30 @@ interface CompanionLanShareStatus {
   enabled?: boolean;
   port?: number;
   token?: string;
+  deviceId?: string;
   urls?: string[];
+  deviceName?: string;
+  diagnostics?: CompanionLanShareDiagnostics;
+  devices?: CompanionLanShareDevice[];
+}
+
+interface CompanionLanShareDiagnostics {
+  deviceId?: string;
+  deviceName?: string;
+  addresses?: string[];
+  discoveryAddress?: string;
+  discoveryPort?: number;
+  port?: number;
+  multicast?: boolean;
+}
+
+interface CompanionLanShareDevice {
+  id: string;
+  name: string;
+  address?: string;
+  addresses?: string[];
+  port?: number;
+  lastSeenAt?: string;
 }
 
 interface CompanionSettings {
@@ -70,6 +93,7 @@ interface CompanionAnalysisAttachment {
 }
 
 interface CompanionAnalyzeContextPayload {
+  requestId?: string;
   imageDataUrl?: string;
   activeTitle?: string;
   note?: string;
@@ -122,6 +146,7 @@ interface CompanionApi {
   selectRegion(): Promise<unknown>;
   analyzeScreenshot(payload: CompanionAnalyzeContextPayload): Promise<CompanionAnalyzeResult>;
   analyzeContext(payload: CompanionAnalyzeContextPayload): Promise<CompanionAnalyzeResult>;
+  analyzeContextStream?(payload: CompanionAnalyzeContextPayload): Promise<CompanionAnalyzeResult>;
   transcribeAudio(payload: CompanionAudioPayload): Promise<{ text?: string }>;
   generateImage(payload: { prompt: string }): Promise<{ imageDataUrl: string; model: string }>;
   ingestFiles(paths: string[]): Promise<CompanionAttachmentItem[]>;
@@ -133,6 +158,8 @@ interface CompanionApi {
   setStartupEnabled(enabled: boolean): Promise<{ openAtLogin?: boolean }>;
   getLanShareStatus(): Promise<CompanionLanShareStatus>;
   setLanShareEnabled(enabled: boolean): Promise<CompanionLanShareStatus>;
+  getLanShareDevices?(): Promise<CompanionLanShareDevice[]>;
+  sendLanShareToDevice?(deviceId: string): Promise<{ ok?: boolean; canceled?: boolean; count?: number; deviceName?: string }>;
   selectWorkspaceRoot(): Promise<string>;
   listModels(payload: { apiKey?: string; baseUrl?: string }): Promise<{ models?: string[] }>;
   getWindowMode(): Promise<CompanionWindowModeState>;
@@ -146,12 +173,15 @@ interface CompanionApi {
   minimizeWindow(): Promise<void>;
   closeWindow(): Promise<void>;
   togglePin(): Promise<boolean>;
+  writeClipboardText?(text: string): Promise<boolean>;
   getPathForFile(file: File): string;
   onContextUpdated(callback: (context: CompanionActiveContext) => void): CompanionCleanup;
+  onAnalyzeContextChunk?(callback: (payload: { requestId?: string; delta?: string }) => void): CompanionCleanup;
   onWindowModeChanged(callback: (state: CompanionWindowModeState) => void): CompanionCleanup;
   onScreenshotCreated(callback: (payload: CompanionScreenshotPayload) => void): CompanionCleanup;
   onScreenshotError(callback: (message: string) => void): CompanionCleanup;
   onLanShareReceived(callback: (payload: CompanionLanSharePayload) => void): CompanionCleanup;
+  onLanShareDevicesChanged?(callback: (payload: { devices?: CompanionLanShareDevice[] }) => void): CompanionCleanup;
   onUpdateStatus?(callback: (status: CompanionUpdateStatus) => void): CompanionCleanup;
 }
 

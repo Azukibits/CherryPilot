@@ -15,6 +15,7 @@ import {
   COMPACT_VISIBLE_STRIP,
   CONTEXT_POLL_INTERVAL_MS,
   PRELOAD_PATH,
+  DEV_SERVER_URL,
   RENDERER_DIST,
   WINDOW_SIZES
 } from '@/main/entity';
@@ -442,27 +443,15 @@ function updateCompactDockSide(bounds) {
 
 // 向渲染层广播窗口模式，并返回当前模式快照。
 export function emitWindowMode() {
-
   if (mainState.mainWindow && !mainState.mainWindow.isDestroyed()) {
-
     mainState.mainWindow.webContents.send('window-mode-changed', {
-
       mode: mainState.windowMode,
-
       dockSide: mainState.compactDockSide,
-
       revealed: mainState.compactRevealed,
-
       docked: mainState.compactDocked,
-
       answerZoomed: mainState.compactAnswerZoomed
-
     });
-
   }
-
-
-
   return {
 
     mode: mainState.windowMode,
@@ -591,6 +580,16 @@ function getCompactAnchorBounds(bounds) {
 
   };
 
+}
+
+function getExpandedBoundsFromAnchor(anchor) {
+  const expanded = WINDOW_SIZES.expanded;
+  return fitBoundsToDisplay({
+    x: Math.round(anchor.x),
+    y: Math.round(anchor.y),
+    width: expanded.width,
+    height: expanded.height
+  });
 }
 
 
@@ -724,90 +723,39 @@ export function setCompactAnswerZoom(enabled) {
 
 // 在展开主窗和悬浮窗之间切换。
 export function setWindowMode(mode) {
-
   if (!mainState.mainWindow || mainState.mainWindow.isDestroyed()) {
-
     return emitWindowMode();
-
   }
-
-
-
   const restoredBounds = consumeCompactAnswerRestoreBounds();
-
-
-
   if (mode === 'compact') {
-
     const current = restoredBounds || mainState.mainWindow.getBounds();
-
     mainState.compactDragState = null;
-
     mainState.compactDocked = false;
-
     mainState.compactRevealed = false;
-
     updateCompactDockSide(current);
-
     mainState.windowMode = 'compact';
-
     mainState.mainWindow.setResizable(false);
-
     if (typeof mainState.mainWindow.setHasShadow === 'function') {
-
       mainState.mainWindow.setHasShadow(false);
-
     }
-
-    setCompactWindowBounds(getFreeCompactBounds(current), false);
-
+    setCompactWindowBounds(getFreeCompactBounds(current), true);
     return emitWindowMode();
-
   }
-
-
-
   const expanded = WINDOW_SIZES.expanded;
-
   const current = restoredBounds || mainState.mainWindow.getBounds();
-
   const anchor = getCompactAnchorBounds(current);
-
   mainState.windowMode = 'expanded';
-
   mainState.compactDragState = null;
-
   mainState.compactRevealed = false;
-
   mainState.compactDocked = false;
-
   if (typeof mainState.mainWindow.setHasShadow === 'function') {
-
     mainState.mainWindow.setHasShadow(true);
-
   }
-
   mainState.mainWindow.setResizable(true);
-
   mainState.mainWindow.setMinimumSize(expanded.minWidth, expanded.minHeight);
-
-  mainState.mainWindow.setBounds(fitBoundsToDisplay({
-
-    x: anchor.x + anchor.width - expanded.width,
-
-    y: anchor.y,
-
-    width: expanded.width,
-
-    height: expanded.height
-
-  }), false);
-
+  mainState.mainWindow.setBounds(getExpandedBoundsFromAnchor(anchor), false);
   return emitWindowMode();
-
 }
-
-
 
 // 记录悬浮窗拖拽起点并收起工具区。
 export function beginCompactDrag(point = {}) {
@@ -1192,24 +1140,39 @@ export function createWindow() {
 
   mainState.mainWindow.setMenuBarVisibility(false);
 
-  mainState.mainWindow.loadFile(path.join(RENDERER_DIST, 'index.html'));
+  if (DEV_SERVER_URL) {
+    mainState.mainWindow.loadURL(DEV_SERVER_URL);
+    mainState.mainWindow.webContents.openDevTools();
+  } else {
+    mainState.mainWindow.loadFile(path.join(RENDERER_DIST, 'index.html'));
+  }
 
+  let mainWindowShown = false;
+  const showMainWindowOnce = () => {
+    if (mainWindowShown || !mainState.mainWindow || mainState.mainWindow.isDestroyed()) {
+      return;
+    }
 
-  mainState.mainWindow.once('ready-to-show', () => {
-
+    mainWindowShown = true;
     mainState.mainWindow.show();
-
+    mainState.mainWindow.focus();
     emitWindowMode();
+  };
 
-  });
+  mainState.mainWindow.once('ready-to-show', showMainWindowOnce);
 
 
 
   mainState.mainWindow.webContents.once('did-finish-load', () => {
 
+    showMainWindowOnce();
+
     emitWindowMode();
 
   });
+
+  const showFallbackTimer = setTimeout(showMainWindowOnce, 1500);
+  showFallbackTimer.unref?.();
 
 
 

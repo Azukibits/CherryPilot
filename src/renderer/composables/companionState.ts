@@ -1,4 +1,4 @@
-import { reactive, watch } from 'vue';
+﻿import { reactive, watch } from 'vue';
 import { GUIDE_LANGUAGE_KEY, PROVIDERS } from '@/renderer/entity';
 import { normalizeGuideLanguage, textFor } from '@/renderer/composables/companionText';
 
@@ -69,7 +69,11 @@ export const companionState = reactive({
     enabled: false,
     port: 0,
     token: '',
-    urls: [] as string[]
+    deviceId: '',
+    urls: [] as string[],
+    deviceName: '',
+    diagnostics: {} as CompanionLanShareDiagnostics,
+    devices: [] as CompanionLanShareDevice[]
   },
   // 回答区和悬浮输入的显示状态。
   statusText: '',

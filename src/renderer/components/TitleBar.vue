@@ -32,7 +32,7 @@ function closeWindow() {
 </script>
 
 <template>
-  <header class="titlebar">
+  <header class="titlebar" :class="{ 'is-light': state.theme === 'light' }">
     <div class="window-brand">
       <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
         <CherryMark />
@@ -96,3 +96,156 @@ function closeWindow() {
     </div>
   </header>
 </template>
+
+
+<style scoped lang="less">
+.titlebar {
+  height: 54px;
+  flex: 0 0 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 10px 0 12px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(7, 10, 15, 0.76);
+  -webkit-app-region: drag;
+}
+
+.window-brand {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  padding: 6px;
+  border: 1px solid rgba(255, 77, 122, 0.24);
+  border-radius: 8px;
+  color: #effffb;
+  background: linear-gradient(145deg, rgba(255, 77, 122, 0.18), rgba(56, 215, 135, 0.11));
+}
+
+.brand-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.brand-copy strong {
+  overflow: hidden;
+  color: #f3f9fb;
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 16px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.brand-copy span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 13px;
+}
+
+.brand-copy i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(67, 240, 206, 0.8);
+}
+
+.window-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  -webkit-app-region: no-drag;
+}
+
+.icon-button,
+.mini-button,
+.field-icon-button {
+  display: inline-grid;
+  place-items: center;
+  color: #99a7b4;
+  background: transparent;
+  transform: translateZ(0);
+  transition: color 120ms ease, border-color 120ms ease, background 120ms ease, transform 120ms var(--ease-snap);
+}
+
+.icon-button {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+}
+
+.icon-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.icon-button:hover,
+.icon-button.is-active:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.075);
+}
+
+.icon-button.is-active {
+  color: var(--accent);
+}
+
+.icon-button.danger:hover {
+  color: #fff;
+  background: rgba(255, 96, 120, 0.82);
+}
+
+.titlebar.is-light{
+  position: relative;
+  border-bottom-color: rgba(61, 58, 50, 0.13);
+  background:
+    linear-gradient(90deg, rgba(255, 248, 235, 0.94), rgba(237, 242, 234, 0.92) 54%, rgba(226, 238, 237, 0.92));
+}
+
+.titlebar.is-light::after{
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(214, 63, 99, 0.78), rgba(20, 121, 111, 0.48), transparent 86%);
+  pointer-events: none;
+}
+
+.titlebar.is-light .brand-copy strong{
+  color: var(--ink);
+}
+
+.titlebar.is-light .brand-copy span{
+  color: #66706c;
+}
+
+.titlebar.is-light .brand-mark{
+  color: #24423d;
+  border-color: rgba(214, 63, 99, 0.2);
+  background:
+    linear-gradient(145deg, rgba(255, 240, 230, 0.92), rgba(221, 238, 232, 0.86));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 8px 16px rgba(52, 45, 35, 0.1);
+}
+
+.titlebar.is-light .icon-button.is-active{
+  color: var(--accent);
+}
+
+.titlebar.is-light .icon-button.danger:hover{
+  color: #fffaf7;
+  background: rgba(214, 63, 99, 0.86);
+}
+</style>

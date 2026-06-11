@@ -36,7 +36,8 @@ export function getLanShareValues() {
   return {
     enabled: Boolean(companionState.lanShare?.enabled),
     port: Number(companionState.lanShare?.port || 0) || 0,
-    token: companionState.lanShare?.token || ''
+    token: companionState.lanShare?.token || '',
+    deviceId: companionState.lanShare?.deviceId || ''
   };
 }
 
@@ -99,7 +100,11 @@ export function applyLanShareStatus(status: CompanionLanShareStatus = {}) {
   companionState.lanShare.enabled = Boolean(status.enabled);
   companionState.lanShare.port = Number(status.port || 0) || 0;
   companionState.lanShare.token = status.token || '';
+  companionState.lanShare.deviceId = status.deviceId || '';
   companionState.lanShare.urls = Array.isArray(status.urls) ? status.urls : [];
+  companionState.lanShare.deviceName = status.deviceName || '';
+  companionState.lanShare.diagnostics = status.diagnostics || {};
+  companionState.lanShare.devices = Array.isArray(status.devices) ? status.devices : companionState.lanShare.devices;
 }
 
 // 生成 provider 在界面上的展示名称，本地模型使用独立文案。
