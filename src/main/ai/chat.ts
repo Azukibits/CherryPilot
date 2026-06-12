@@ -435,9 +435,12 @@ export async function analyzeContext({ imageDataUrl, activeTitle, note, attachme
     }
   ];
 
-  if (typeof options.onDelta === 'function') {
+  const onDelta = typeof options.onDelta === 'function' ? options.onDelta : undefined;
+  const shouldStream = options.stream !== false;
 
-    return runStreamingChatCompletion({ baseUrl, apiKey, model, messages, settings, onDelta: options.onDelta });
+  if (shouldStream) {
+
+    return runStreamingChatCompletion({ baseUrl, apiKey, model, messages, settings, onDelta });
 
   }
 
@@ -447,7 +450,7 @@ export async function analyzeContext({ imageDataUrl, activeTitle, note, attachme
 // 保留截图分析 IPC 的语义入口，内部复用上下文分析。
 export async function analyzeContextStream(payload, options = {}) {
 
-  return analyzeContext(payload, options);
+  return analyzeContext(payload, { ...options, stream: true });
 
 }
 
